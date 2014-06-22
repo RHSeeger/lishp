@@ -1,28 +1,36 @@
 #!/bin/bash
 
-declare -a VARIABLES_ATOMS_TYPE
-declare -a VARIABLES_ATOMS_VALUE
-declare -a VARIABLES_PAIRS 
-declare -A VARIABLES_INDEXES=([ATOMS]=0 [PAIRS]=0)
+# TODO: Only set this if it doesn't already exist
 
+# handle=[type]
+declare -a VARIABLES_METADATA=()
+declare -a VARIABLES_VALUES=()
+declare VARIABLES_INDEX=0
+
+declare -A VARIABLES_OFFSETS=([type]=0)
 # == ATOMS ==
 function atom_new() {
     declare type=$1
     declare value=$2
-    declare index=${VARIABLES_INDEXES[ATOMS]}
-    VARIABLES_INDEXES[ATOMS]=$(( ${VARIABLES_INDEXES[ATOMS]} + 1 ))
+    declare index=${VARIABLES_INDEX}
+    VARIABLES_INDEX=$(( ${VARIABLES_INDEX} + 1 ))
 
-    VARIABLES_ATOMS_TYPE[index]=$type
-    VARIABLES_ATOMS_VALUE[index]=$value
+    declare -a metadata=($type)
+    VARIABLES_METADATA[index]=${metadata[@]}
+    VARIABLES_VALUES[index]=$value
+
     RESULT=$index
 }
 
-function atom_type() {
-    RESULT=${VARIABLES_ATOMS_TYPE[$1]}
+function variable_type() {
+    declare index=$1
+    declare -a metadata=(${VARIABLES_METADATA[$index]})
+    RESULT=${metadata[${VARIABLES_OFFSETS[type]}]}
 }
 
-function atom_value() {
-    RESULT=${VARIABLES_ATOMS_VALUE[$1]}
+function variable_value() {
+    declare index=$1
+    RESULT=${VARIABLES_VALUES[index]}
 }
 
 # == LISTS ==
@@ -116,19 +124,19 @@ function assertEquals() {
 atom_new integer 12
 declare atomId_1=$RESULT
 
-atom_type $atomId_1
+variable_type $atomId_1
 assertEquals integer "$RESULT" Type of first atom
-atom_value $atomId_1
+variable_value $atomId_1
 assertEquals 12 "$RESULT" Value of first atom
 
 atom_new string "hello there"
 declare atomId_2=$RESULT
 
-atom_type $atomId_2
+variable_type $atomId_2
 assertEquals string "$RESULT" Type of second atom
-atom_value $atomId_2
+variable_value $atomId_2
 assertEquals "hello there" "$RESULT" Value of second atom
-atom_value $atomId_1
+variable_value $atomId_1
 assertEquals 12 "$RESULT" Value of first atom remains
 
 # == LIST TESTS ==
