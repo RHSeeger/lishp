@@ -27,10 +27,18 @@ function variable_type() {
     declare -a metadata=(${VARIABLES_METADATA[$index]})
     RESULT=${metadata[${VARIABLES_OFFSETS[type]}]}
 }
+function variable_type_p() {
+    variable_type ${@}
+    echo $RESULT
+}
 
 function variable_value() {
     declare index=$1
     RESULT=${VARIABLES_VALUES[index]}
+}
+function variable_value_p() {
+    variable_value ${@}
+    echo $RESULT
 }
 
 # == LISTS ==
@@ -126,8 +134,10 @@ declare atomId_1=$RESULT
 
 variable_type $atomId_1
 assertEquals integer "$RESULT" Type of first atom
+assertEquals integer "$(variable_type_p $atomId_1)" Type of first atom
 variable_value $atomId_1
 assertEquals 12 "$RESULT" Value of first atom
+assertEquals 12 "$(variable_value_p $atomId_1)" Value of first atom
 
 atom_new string "hello there"
 declare atomId_2=$RESULT
