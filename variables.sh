@@ -1,14 +1,20 @@
 #!/bin/bash
 
+. common.sh
+
 # TODO: Only set this if it doesn't already exist
 
 # handle=[type]
-declare -a VARIABLES_METADATA=()
-declare -a VARIABLES_VALUES=()
-declare VARIABLES_INDEX=0
-declare VARIABLES_DEBUG=1
+if [ -z "${VARIABLES_METADATA}" ]; then
+    declare -a VARIABLES_METADATA=()
+    declare -a VARIABLES_VALUES=()
+    declare VARIABLES_INDEX=0
 
-declare -A VARIABLES_OFFSETS=([type]=0)
+    declare -A VARIABLES_OFFSETS=([type]=0)
+
+    declare VARIABLES_DEBUG=0
+fi
+
 # == ATOMS ==
 function variable_new() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_new ${@}" ; fi
@@ -72,71 +78,21 @@ function variable_list_append() {
     RESULT=${#list_value[@]}
 }
 
+function variable_list_index() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list_index ${@}" ; fi
+    declare list_token=$1
+    declare index=$2
+    declare -a value=($(variable_value_p $list_token))
+    RESULT=${value[$index]}
+}
+
+function variable_list_index_p() {
+    variable_list_index "${@}"
+    echo $RESULT
+}
+
 # ignore the following
 
-function list_new() {
-    echo $VARIABLES_INDEXES[PAIRS]
-}
-
-function list_length() {
-    declare list_name=$1
-    declare list_index=$2
-    declare tmp
-    declare value_key
-    declare value
-    RESULT=""
-
-    while true ; do
-        tmp=(${LISTS[$list_name]})
-        echo tmp=${tmp[@]}
-        value_key=${tmp[0]}
-        echo value_key=$value_key
-
-        if [ $list_index == 0 ] ; then # We're at the right index, return the value
-            value=${VALUES[$value_key]}
-            echo value=$value
-            RESULT=${value}
-            return 1
-        fi
-        if [ ${#tmp[@]} -lt 2 ] ; then
-            error "The list at ${list_name} had less than 2 elements"
-        fi
-        list_name=${tmp[1]}
-        echo new list name = "${list_name}"
-        list_index=$(( $list_index - 1 ))
-        echo new index = ${list_index}
-    done
-}
-
-function list_index() {
-    declare list_name=$1
-    declare list_index=$2
-    declare tmp
-    declare value_key
-    declare value
-    RESULT=""
-
-    while true ; do
-        tmp=(${PAIRS[$list_name]})
-        echo tmp=${tmp[@]}
-        value_key=${tmp[0]}
-        echo value_key=$value_key
-
-        if [ $list_index == 0 ] ; then # We're at the right index, return the value
-            value=${ATOMS[$value_key]}
-            echo value=$value
-            RESULT=${value}
-            return 1
-        fi
-        if [ ${#tmp[@]} -lt 2 ] ; then
-            error "The list at ${list_name} had less than 2 elements"
-        fi
-        list_name=${tmp[1]}
-        echo new list name = "${list_name}"
-        list_index=$(( $list_index - 1 ))
-        echo new index = ${list_index}
-    done
-}
 
 # == Output
 function variable_print_metadata() {
@@ -187,14 +143,6 @@ if [ $0 != $BASH_SOURCE ]; then
     return
 fi
 
-function assertEquals() {
-    declare expect=$1
-    declare actual=$2
-    declare message=${@:3}
-    if [ "$expect" != "$actual" ]; then
-        echo "('$expect' != '$actual') $message"
-    fi
-}
 
 # == ATOM TESTS ==
 variable_new integer 12
@@ -223,3 +171,13 @@ assertEquals 12 "$RESULT" Value of first atom remains
 # add an atom to list
 # test its size is 1
 # retrieve value of first item (atom) in list
+
+variable_new list ; vCode=${RESULT}
+variable_new identifier "+" ; variable_list_append ${vCode} ${RESULT}
+variable_new integer 5 ; variable_list_append ${vCode} ${RESULT}
+variable_new integer 2 ; variable_list_append ${vCode} ${RESULT}
+
+assertEquals list "$(variable_type_p $vCode)" "List type"
+assertEquals identifier "$(variable_type_p $(variable_list_index_p $vCode 0))" "List first item type"
+assertEquals integer "$(variable_type_p $(variable_list_index_p $vCode 1))" "List first item type"
+assertEquals integer "$(variable_type_p $(variable_list_index_p $vCode 2))" "List first item type"

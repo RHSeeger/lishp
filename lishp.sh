@@ -1,9 +1,6 @@
 #!/bin/bash
 
-function stderr() {
-    echo "${@}" 2>&1
-}
-
+. common.sh
 . variables.sh
 
 # (lambda (x y) ; add
