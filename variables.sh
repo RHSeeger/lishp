@@ -81,6 +81,10 @@ function variable::list::append() {
 function variable::list::index() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list::index ${@}" ; fi
     declare list_token=$1
+    if [[ $(variable::type_p $list_token) != "list" ]]; then
+        stderr "Cannot use [variable::list::index] on type [$(variable::type_p $list_token)]"
+        exit 1
+    fi
     declare index=$2
     declare -a value=($(variable::value_p $list_token))
     RESULT=${value[$index]}
@@ -89,6 +93,33 @@ function variable::list::index() {
 function variable::list::index_p() {
     variable::list::index "${@}"
     echo "$RESULT"
+}
+
+function variable::list::first() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::first ${@}" ; fi
+    declare list_token=$1
+    variable::list::index ${list_token} 0
+}
+
+function variable::list::first_p() {
+    variable::list::first "${@}"
+    echo "${RESULT}"
+}
+
+function variable::list::rest() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::rest ${@}" ; fi
+    declare list_token=$1
+    if [[ $(variable::type_p $list_token) != "list" ]]; then
+        stderr "Cannot use [variable::list::rest] on type [$(variable::type_p $list_token)]"
+        exit 1
+    fi
+    declare -a values=($(variable::value_p $list_token))
+    RESULT="${values[@]:1}"
+}
+
+function variable::list::rest_p() {
+    variable::list::rest "${@}"
+    echo "${RESULT}"
 }
 
 # ignore the following
@@ -181,3 +212,12 @@ assertEquals list "$(variable::type_p $vCode)" "List type"
 assertEquals identifier "$(variable::type_p $(variable::list::index_p $vCode 0))" "List first item type"
 assertEquals integer "$(variable::type_p $(variable::list::index_p $vCode 1))" "List first item type"
 assertEquals integer "$(variable::type_p $(variable::list::index_p $vCode 2))" "List first item type"
+
+variable::new list ; vCode=${RESULT}
+variable::new string "a" ; A=${RESULT} ; variable::list::append ${vCode} $A
+variable::new string "b" ; B=${RESULT} ; variable::list::append ${vCode} $B
+variable::new string "c" ; C=${RESULT} ; variable::list::append ${vCode} $C
+
+assertEquals "$B" "$(variable::list::index_p $vCode 1)" "index_p"
+assertEquals "$A" "$(variable::list::first_p $vCode)" "first_p"
+assertEquals "${B} ${C}" "$(variable::list::rest_p $vCode 0)" "rest_p"

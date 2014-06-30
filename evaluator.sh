@@ -65,9 +65,9 @@ function evaluator::eval_list() {
     fi
 
     declare -a value=($(variable::value_p $token))
-    declare type_1=$(variable::type_p ${value})
-    declare value_1=$(variable::value_p ${value})
-    declare -a args=${value[@]:1}
+    declare type_1=$(variable::type_p ${value[0]})
+    declare value_1=$(variable::value_p ${value[0]})
+    declare -a args=($(variable::list::rest_p $token))
 
     case "${type_1}" in
         identifier) # Lookup the identifier in the environment and return it's value
