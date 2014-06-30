@@ -16,8 +16,8 @@ if [ -z "${VARIABLES_METADATA}" ]; then
 fi
 
 # == ATOMS ==
-function variable_new() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_new ${@}" ; fi
+function variable::new() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::new ${@}" ; fi
     declare type=$1
     declare value=$2
     declare index=${VARIABLES_INDEX}
@@ -30,22 +30,22 @@ function variable_new() {
     RESULT=$index
 }
 
-function variable_type() {
+function variable::type() {
     declare index=$1
     declare -a metadata=(${VARIABLES_METADATA[$index]})
     RESULT=${metadata[${VARIABLES_OFFSETS[type]}]}
 }
-function variable_type_p() {
-    variable_type ${@}
+function variable::type_p() {
+    variable::type ${@}
     echo $RESULT
 }
 
-function variable_value() {
+function variable::value() {
     declare index=$1
     RESULT=${VARIABLES_VALUES[index]}
 }
-function variable_value_p() {
-    variable_value ${@}
+function variable::value_p() {
+    variable::value ${@}
     echo $RESULT
 }
 
@@ -60,14 +60,14 @@ function variable_value_p() {
 #     type = atom|pair
 #     id = index int VARIABLES_(ATOMS_TYPE|ATOMS_VALUES|PAIRS)
 
-function variable_list_append() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list_append ${@}" ; fi
+function variable::list::append() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::append ${@}" ; fi
     declare list_token=$1
     declare value_token=$2
 
-    if [ "$(variable_type_p ${list_token})" != "list" ]; then
-        echo "Cannot append to variable [${list_token}] of type [$(variable_type_p ${list_token})]"
-        variable_print_metadata
+    if [ "$(variable::type_p ${list_token})" != "list" ]; then
+        echo "Cannot append to variable [${list_token}] of type [$(variable::type_p ${list_token})]"
+        variable::printMetadata
         exit 1
     fi
 
@@ -78,16 +78,16 @@ function variable_list_append() {
     RESULT=${#list_value[@]}
 }
 
-function variable_list_index() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list_index ${@}" ; fi
+function variable::list::index() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list::index ${@}" ; fi
     declare list_token=$1
     declare index=$2
-    declare -a value=($(variable_value_p $list_token))
+    declare -a value=($(variable::value_p $list_token))
     RESULT=${value[$index]}
 }
 
-function variable_list_index_p() {
-    variable_list_index "${@}"
+function variable::list::index_p() {
+    variable::list::index "${@}"
     echo $RESULT
 }
 
@@ -95,7 +95,7 @@ function variable_list_index_p() {
 
 
 # == Output
-function variable_print_metadata() {
+function variable::printMetadata() {
     stderr "VARIABLES_METADATA"
     for key in "${!VARIABLES_METADATA[@]}"; do
         stderr "    [${key}]=[${VARIABLES_METADATA[${key}]}]"
@@ -107,31 +107,31 @@ function variable_print_metadata() {
     stderr "VARIABLES_INDEX=${VARIABLES_INDEX}"
 }
 
-function variable_print() {
+function variable::print() {
     declare token=$1
     declare indent=$2
-    declare type=$(variable_type_p ${token})
+    declare type=$(variable::type_p ${token})
 
     case ${type} in
         list)
             echo "${indent}${type}(${token}) :: ["
-            declare -a values=($(variable_value_p ${token}))
+            declare -a values=($(variable::value_p ${token}))
 #            echo "${indent}  ${values[@]}"
             for value in ${values[@]}; do
-                variable_print ${value} "${indent}  "
+                variable::print ${value} "${indent}  "
             done
             echo "${indent}]"
             # echo "${indent}${type} :: size=${#value[@]} :: ${value[@]}"
             ;;
         string)
-            echo "${indent}${type}(${token}) :: [$(variable_value_p ${token})]"
+            echo "${indent}${type}(${token}) :: [$(variable::value_p ${token})]"
             ;;
         integer)
-            echo "${indent}${type}(${token}) :: [$(variable_value_p ${token})]"
+            echo "${indent}${type}(${token}) :: [$(variable::value_p ${token})]"
             ;;
         *)
             stderr "Invalid variable type [${type}] for token [${token}]"
-            variable_print_metadata
+            variable::printMetadata
             exit 1
             ;;
     esac
@@ -145,24 +145,24 @@ fi
 
 
 # == ATOM TESTS ==
-variable_new integer 12
+variable::new integer 12
 declare atomId_1=$RESULT
 
-variable_type $atomId_1
+variable::type $atomId_1
 assertEquals integer "$RESULT" Type of first atom
-assertEquals integer "$(variable_type_p $atomId_1)" Type of first atom
-variable_value $atomId_1
+assertEquals integer "$(variable::type_p $atomId_1)" Type of first atom
+variable::value $atomId_1
 assertEquals 12 "$RESULT" Value of first atom
-assertEquals 12 "$(variable_value_p $atomId_1)" Value of first atom
+assertEquals 12 "$(variable::value_p $atomId_1)" Value of first atom
 
-variable_new string "hello there"
+variable::new string "hello there"
 declare atomId_2=$RESULT
 
-variable_type $atomId_2
+variable::type $atomId_2
 assertEquals string "$RESULT" Type of second atom
-variable_value $atomId_2
+variable::value $atomId_2
 assertEquals "hello there" "$RESULT" Value of second atom
-variable_value $atomId_1
+variable::value $atomId_1
 assertEquals 12 "$RESULT" Value of first atom remains
 
 # == LIST TESTS ==
@@ -172,12 +172,12 @@ assertEquals 12 "$RESULT" Value of first atom remains
 # test its size is 1
 # retrieve value of first item (atom) in list
 
-variable_new list ; vCode=${RESULT}
-variable_new identifier "+" ; variable_list_append ${vCode} ${RESULT}
-variable_new integer 5 ; variable_list_append ${vCode} ${RESULT}
-variable_new integer 2 ; variable_list_append ${vCode} ${RESULT}
+variable::new list ; vCode=${RESULT}
+variable::new identifier "+" ; variable::list::append ${vCode} ${RESULT}
+variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
+variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
 
-assertEquals list "$(variable_type_p $vCode)" "List type"
-assertEquals identifier "$(variable_type_p $(variable_list_index_p $vCode 0))" "List first item type"
-assertEquals integer "$(variable_type_p $(variable_list_index_p $vCode 1))" "List first item type"
-assertEquals integer "$(variable_type_p $(variable_list_index_p $vCode 2))" "List first item type"
+assertEquals list "$(variable::type_p $vCode)" "List type"
+assertEquals identifier "$(variable::type_p $(variable::list::index_p $vCode 0))" "List first item type"
+assertEquals integer "$(variable::type_p $(variable::list::index_p $vCode 1))" "List first item type"
+assertEquals integer "$(variable::type_p $(variable::list::index_p $vCode 2))" "List first item type"
