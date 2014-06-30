@@ -37,7 +37,7 @@ function variable::type() {
 }
 function variable::type_p() {
     variable::type ${@}
-    echo $RESULT
+    echo "$RESULT"
 }
 
 function variable::value() {
@@ -46,7 +46,7 @@ function variable::value() {
 }
 function variable::value_p() {
     variable::value ${@}
-    echo $RESULT
+    echo "$RESULT"
 }
 
 # == LISTS ==
@@ -88,7 +88,7 @@ function variable::list::index() {
 
 function variable::list::index_p() {
     variable::list::index "${@}"
-    echo $RESULT
+    echo "$RESULT"
 }
 
 # ignore the following
