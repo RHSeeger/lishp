@@ -9,7 +9,7 @@ function assertEquals() {
     declare message=${@:3}
     if [ "$expect" != "$actual" ]; then
         echo "FAILED ('$expect' != '$actual') $message"
-        return -1
+        return 1
     fi
     echo "PASSED $message"
     return 0

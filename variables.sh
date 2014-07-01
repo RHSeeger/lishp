@@ -24,8 +24,26 @@ function variable::new() {
     VARIABLES_INDEX=$(( ${VARIABLES_INDEX} + 1 ))
 
     declare -a metadata=($type)
-    VARIABLES_METADATA[index]=${metadata[@]}
-    VARIABLES_VALUES[index]=$value
+    VARIABLES_METADATA[${index}]="${metadata[@]}"
+    VARIABLES_VALUES[${index}]="$value"
+
+    #echo "Creating a new [$1] of [$2] at index [${index}]"
+    #echo "Result=${index}"
+    RESULT="$index"
+}
+function variable::new_p() {
+    variable::new "${@}"
+    echo "$RESULT"
+}
+
+function variable::set() {
+    declare token="$1"
+    declare type="$2"
+    declare value="$3"
+    
+    declare -a metadata=($type)
+    VARIABLES_METADATA[${token}]="${metadata[@]}"
+    VARIABLES_VALUES[${token}]="$value"
 
     RESULT=$index
 }
@@ -36,7 +54,7 @@ function variable::type() {
     RESULT=${metadata[${VARIABLES_OFFSETS[type]}]}
 }
 function variable::type_p() {
-    variable::type ${@}
+    variable::type "${@}"
     echo "$RESULT"
 }
 
