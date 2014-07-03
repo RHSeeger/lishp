@@ -6,8 +6,8 @@
 
 # handle=[type]
 if [ -z "${VARIABLES_METADATA}" ]; then
-    declare -a VARIABLES_METADATA=()
-    declare -a VARIABLES_VALUES=()
+    declare -A VARIABLES_METADATA=()
+    declare -A VARIABLES_VALUES=()
     declare VARIABLES_INDEX=0
 
     declare -A VARIABLES_OFFSETS=([type]=0)
@@ -18,18 +18,35 @@ fi
 # == ATOMS ==
 function variable::new() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::new ${@}" ; fi
+
+    if [[ "${1}" == "-name" ]]; then
+        shift
+        declare token="${1}"
+        shift
+    else
+        declare token="auto#${VARIABLES_INDEX}"
+        VARIABLES_INDEX=$(( ${VARIABLES_INDEX} + 1 ))
+    fi
+
+    if [[ "${#@}" -lt 1 || "${#@}" -gt 2 ]]; then
+        stderr "Usage: variable::new ?name? <type> <value>"
+        exit 1
+    fi
+
     declare type=$1
-    declare value=$2
-    declare index=${VARIABLES_INDEX}
-    VARIABLES_INDEX=$(( ${VARIABLES_INDEX} + 1 ))
+    if [[ "${#@}" -eq 1 ]]; then
+        declare value=""
+    else
+        declare value="${2}"
+    fi
 
     declare -a metadata=($type)
-    VARIABLES_METADATA[${index}]="${metadata[@]}"
-    VARIABLES_VALUES[${index}]="$value"
+    VARIABLES_METADATA[${token}]="${metadata[@]}"
+    VARIABLES_VALUES[${token}]="$value"
 
     #echo "Creating a new [$1] of [$2] at index [${index}]"
     #echo "Result=${index}"
-    RESULT="$index"
+    RESULT="$token"
 }
 function variable::new_p() {
     variable::new "${@}"
@@ -59,11 +76,11 @@ function variable::type_p() {
 }
 
 function variable::value() {
-    declare index=$1
-    RESULT=${VARIABLES_VALUES[index]}
+    declare index="${1}"
+    RESULT=${VARIABLES_VALUES[${index}]}
 }
 function variable::value_p() {
-    variable::value ${@}
+    variable::value "${@}"
     echo "$RESULT"
 }
 
@@ -239,3 +256,8 @@ variable::new string "c" ; C=${RESULT} ; variable::list::append ${vCode} $C
 assertEquals "$B" "$(variable::list::index_p $vCode 1)" "index_p"
 assertEquals "$A" "$(variable::list::first_p $vCode)" "first_p"
 assertEquals "${B} ${C}" "$(variable::list::rest_p $vCode 0)" "rest_p"
+
+variable::new -name "EVAL_RESULT" integer 4 ; declare varname="${RESULT}"
+assertEquals "EVAL_RESULT" "${varname}" "Non-auto variable name"
+assertEquals integer $(variable::type_p "${varname}") "Non-auto type"
+assertEquals 4 $(variable::value_p "${varname}") "Non-auto value"

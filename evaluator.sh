@@ -3,10 +3,9 @@
 . common.sh
 . variables.sh
 
-if [ -z "${EVALUATOR_TOKEN}" ]; then
-    declare EVALUATOR_TOKEN="evalToken"
-    variable::new nil nil
-    declare EVALUATOR_VARIABLE="${RESULT}"
+if [ -z "${EVALUATOR_VARIABLE}" ]; then
+    declare EVALUATOR_VARIABLE="EVAL_RESULT"
+    variable::new -name "${EVALUATOR_VARIABLE}" nil nil
 
     declare EVALUATOR_DEBUG=0
 fi
@@ -170,3 +169,4 @@ assertEquals 2 "$(variable::value_p ${RESULT})" '/ 5 2'
 #variable::printMetadata
 #echo "typeof ${vCode}=$(variable::type_p $vCode)"
 
+variable::printMetadata
