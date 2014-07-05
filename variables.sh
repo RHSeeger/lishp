@@ -4,6 +4,15 @@
 
 # TODO: Only set this if it doesn't already exist
 
+#
+# Functions that end in _p send their result to stdout (accessed via $(subshell execution))
+#     They cannot modify data, so can only be used in getters
+#
+# Functions that end in _c return their result via [return 0/1] to signify true/false
+#
+# All other functions return their results in the global RESULT
+#  
+
 # handle=[type]
 if [ -z "${VARIABLES_METADATA}" ]; then
     declare -A VARIABLES_METADATA=()
@@ -15,7 +24,7 @@ if [ -z "${VARIABLES_METADATA}" ]; then
     declare VARIABLES_DEBUG=0
 fi
 
-# == ATOMS ==
+# == GENERAL ==
 function variable::new() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::new ${@}" ; fi
 
@@ -79,22 +88,18 @@ function variable::value() {
     declare index="${1}"
     RESULT=${VARIABLES_VALUES[${index}]}
 }
+
 function variable::value_p() {
     variable::value "${@}"
     echo "$RESULT"
 }
 
-# == LISTS ==
-# (type id type id)
-#     pair with both first and second values
-# (type id)
-#     pair with only a first value (ie, at the end of a list)
-# ()
-#     empty pair
-# whereL
-#     type = atom|pair
-#     id = index int VARIABLES_(ATOMS_TYPE|ATOMS_VALUES|PAIRS)
+# == ATOM ==
 
+# == LIST ==
+# 
+# Lists are represented as just a list of tokens to variables
+#
 function variable::list::append() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::append ${@}" ; fi
     declare list_token=$1
@@ -155,6 +160,42 @@ function variable::list::rest() {
 function variable::list::rest_p() {
     variable::list::rest "${@}"
     echo "${RESULT}"
+}
+
+#
+# Returns code 0 if the list is empty, 1 if not
+#
+function variable::list::isEmpty_c() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::isEmpty_c ${@}" ; fi
+    declare token="${1}"
+    if [[ $(variable::type_p "$token") != "list" ]]; then
+        stderr "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
+        exit 1
+    fi
+    declare -a value=($(variable::value_p "${token}"))
+    [[ ${#value[@]} -eq 0 ]]
+    return $?
+}
+
+# == STACK ==
+# 
+# Last In / First Out
+#
+# Stack commands act on a list data structure
+#
+
+#
+# Adds an item to the stack
+#
+function variable::stack::push() {
+    variable::list::append "${@}"
+}
+
+#
+# Removes and returns the most recent item added to the stack
+#
+function variable::stack::pop() {
+    echo helo
 }
 
 # ignore the following
@@ -261,3 +302,10 @@ variable::new -name "EVAL_RESULT" integer 4 ; declare varname="${RESULT}"
 assertEquals "EVAL_RESULT" "${varname}" "Non-auto variable name"
 assertEquals integer $(variable::type_p "${varname}") "Non-auto type"
 assertEquals 4 $(variable::value_p "${varname}") "Non-auto value"
+
+variable::new list ; vCode=${RESULT}
+variable::list::isEmpty_c ${vCode}
+assertEquals 0 $? "Return code true (0)"
+variable::new identifier "+" ; variable::list::append ${vCode} ${RESULT}
+variable::list::isEmpty_c ${vCode}
+assertEquals 1 $? "Return code false (1)"
