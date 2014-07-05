@@ -106,14 +106,32 @@ function variable::list::append() {
     declare value_token=$2
 
     if [ "$(variable::type_p ${list_token})" != "list" ]; then
-        echo "Cannot append to variable [${list_token}] of type [$(variable::type_p ${list_token})]"
+        stderr "Cannot append to variable [${list_token}] of type [$(variable::type_p ${list_token})]"
         variable::printMetadata
         exit 1
     fi
 
     declare -a list_value=(${VARIABLES_VALUES[$list_token]})
-    list_value[${#list_value[@]}]=${value_token}
+    list_value+=(${value_token})
     VARIABLES_VALUES[$list_token]=${list_value[@]}
+
+    RESULT=${#list_value[@]}
+}
+
+function variable::list::prepend() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::prepend ${@}" ; fi
+    declare list_token=$1
+    declare value_token=$2
+
+    if [ "$(variable::type_p ${list_token})" != "list" ]; then
+        stderr "Cannot append to variable [${list_token}] of type [$(variable::type_p ${list_token})]"
+        variable::printMetadata
+        exit 1
+    fi
+
+    declare -a list_value=(${VARIABLES_VALUES[$list_token]})
+    declare -a new_value=("${value_token}" "${list_value[@]}")
+    VARIABLES_VALUES[$list_token]=${new_value[@]}
 
     RESULT=${#list_value[@]}
 }
@@ -138,6 +156,10 @@ function variable::list::index_p() {
 function variable::list::first() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::first ${@}" ; fi
     declare list_token=$1
+    if [[ $(variable::type_p $list_token) != "list" ]]; then
+        stderr "Cannot use [variable::list::first] on type [$(variable::type_p $list_token)]"
+        exit 1
+    fi
     variable::list::index ${list_token} 0
 }
 
@@ -188,20 +210,117 @@ function variable::list::isEmpty_c() {
 # Adds an item to the stack
 #
 function variable::stack::push() {
-    variable::list::append "${@}"
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::stack::push ${@}" ; fi
+    variable::list::prepend "${@}"
 }
 
 #
 # Removes and returns the most recent item added to the stack
 #
 function variable::stack::pop() {
-    echo helo
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::stack::pop ${@}" ; fi
+    declare token="${1}"
+    if [[ $(variable::type_p "$token") != "list" ]]; then
+        stderr "Cannot use [variable::stack::pop] on type [$(variable::type_p $token)]"
+        exit 1
+    fi
+    if variable::list::isEmpty_c "${token}" ; then
+        stderr "Cannot pop from an empty stack"
+        exit 1
+    fi
+
+    declare result=$(variable::queue::peek_p "${token}")
+    declare type=$(variable::type_p $token)
+    declare value=$(variable::list::rest_p $token)
+    variable::set "$token" "$type" "$value"
+    RESULT="${result}"
 }
 
-# ignore the following
+#
+# Returns the most recent item added to the stack (does note remove it)
+#
+function variable::stack::peek() {
+    declare token="${1}"
+    if [[ $(variable::type_p "$token") != "list" ]]; then
+        stderr "Cannot use [variable::stack::peek] on type [$(variable::type_p $token)]"
+        exit 1
+    fi
+    if variable::list::isEmpty_c $token ; then
+        stderr "Cannot peek from an empty stack"
+        exit 1
+    fi
+
+    declare result=$(variable::list::first_p $token)
+    RESULT="${result}"
+}
+function variable::stack::peek_p() {
+    variable::stack::peek "${@}"
+    echo "$RESULT"
+}
+
+# == QUEUE ==
+# 
+# First In / First Out
+#
+# Queue commands act on a list data structure
+#
+
+#
+# Adds an item to the queue
+#
+function variable::queue::enqueue() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::queue::enqueue ${@}" ; fi
+    variable::list::append "${@}"
+}
+
+#
+# Removes and returns the oldest item added to the queue
+#
+function variable::queue::dequeue() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::isEmpty_c ${@}" ; fi
+    declare token="${1}"
+    if [[ $(variable::type_p "$token") != "list" ]]; then
+        stderr "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
+        exit 1
+    fi
+    if variable::list::isEmpty_c "${token}" ; then
+        stderr "Cannot dequeue from an empty queue"
+        exit 1
+    fi
+
+    declare result=$(variable::queue::peek_p "${token}")
+    declare type=$(variable::type_p $token)
+    declare value=$(variable::list::rest_p $token)
+    variable::set "$token" "$type" "$value"
+    RESULT="${result}"
+}
+
+#
+# Returns the oldest item added to the queue (does note remove it)
+#
+function variable::queue::peek() {
+    declare token="${1}"
+    if [[ $(variable::type_p "$token") != "list" ]]; then
+        stderr "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
+        exit 1
+    fi
+    if variable::list::isEmpty_c $token ; then
+        stderr "Cannot peek from an empty queue"
+        exit 1
+    fi
+    # stderr "peeking at list [$(variable::value_p $token)] / first=$(variable::list::first_p $token)"
+    declare result=$(variable::list::first_p $token)
+    RESULT="${result}"
+}
+function variable::queue::peek_p() {
+    variable::queue::peek "${@}"
+    echo "$RESULT"
+}
 
 
+#
 # == Output
+#
 function variable::printMetadata() {
     stderr "VARIABLES_METADATA"
     for key in "${!VARIABLES_METADATA[@]}"; do
@@ -309,3 +428,43 @@ assertEquals 0 $? "Return code true (0)"
 variable::new identifier "+" ; variable::list::append ${vCode} ${RESULT}
 variable::list::isEmpty_c ${vCode}
 assertEquals 1 $? "Return code false (1)"
+
+# append
+variable::new list ; vCode=${RESULT}
+variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
+variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
+assertEquals 5 "$(variable::value_p $(variable::list::index_p $vCode 0))" "append / 0"
+assertEquals 2 "$(variable::value_p $(variable::list::index_p $vCode 1))" "append / 1"
+
+#
+# STACK tests
+#
+variable::new list ; vCode=${RESULT}
+variable::new string "first" ; variable::stack::push ${vCode} ${RESULT}
+variable::new string "second" ; variable::stack::push ${vCode} ${RESULT}
+variable::new string "third" ; variable::stack::push ${vCode} ${RESULT}
+assertEquals "third" "$(variable::value_p $(variable::stack::peek_p $vCode))" "stack::peek first"
+variable::stack::pop $vCode
+assertEquals "third" "$(variable::value_p ${RESULT})" "stack::pop first"
+assertEquals "second" "$(variable::value_p $(variable::stack::peek_p $vCode))" "stack::peek second"
+variable::stack::pop $vCode
+assertEquals "second" "$(variable::value_p ${RESULT})" "queue::dequeue second"
+
+#
+# QUEUE tests
+#
+variable::new list ; vCode=${RESULT}
+variable::new string "first" ; variable::queue::enqueue ${vCode} ${RESULT}
+variable::new string "second" ; variable::queue::enqueue ${vCode} ${RESULT}
+variable::new string "third" ; variable::queue::enqueue ${vCode} ${RESULT}
+assertEquals "first" "$(variable::value_p $(variable::queue::peek_p $vCode))" "queue:peek first"
+variable::queue::dequeue $vCode
+assertEquals "first" "$(variable::value_p ${RESULT})" "queue::dequeue first"
+assertEquals "second" "$(variable::value_p $(variable::queue::peek_p $vCode))" "queue:peek second"
+variable::queue::dequeue $vCode
+assertEquals "second" "$(variable::value_p ${RESULT})" "queue::dequeue second"
+
+if [ "$1" == "debug" ]; then 
+    variable::printMetadata
+fi
+
