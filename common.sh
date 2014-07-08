@@ -1,4 +1,6 @@
 
+. logger.sh
+
 function stderr() {
     echo "${@}" 2>&1
 }
@@ -9,9 +11,11 @@ function assertEquals() {
     declare message=${@:3}
     if [ "$expect" != "$actual" ]; then
         echo "FAILED ('$expect' != '$actual') $message"
+        log "FAILED ('$expect' != '$actual') $message"
         return 1
     fi
     echo "PASSED $message"
+    log "PASSED $message"
     return 0
 }
 

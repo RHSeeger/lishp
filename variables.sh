@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . common.sh
+. logger.sh
 
 # TODO: Only set this if it doesn't already exist
 
@@ -21,12 +22,12 @@ if [ -z "${VARIABLES_METADATA}" ]; then
 
     declare -A VARIABLES_OFFSETS=([type]=0)
 
-    declare VARIABLES_DEBUG=0
+    declare VARIABLES_DEBUG=1
 fi
 
 # == GENERAL ==
 function variable::new() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::new ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::new ${@}" ; fi
 
     if [[ "${1}" == "-name" ]]; then
         shift
@@ -63,6 +64,12 @@ function variable::new_p() {
 }
 
 function variable::set() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::set ${@}" ; fi
+    if [[ ${#@} -ne 3 ]]; then
+        log "Usage: variable::set <variable token> <type> <value>"
+        exit 1
+    fi
+
     declare token="$1"
     declare type="$2"
     declare value="$3"
@@ -76,6 +83,10 @@ function variable::set() {
 
 function variable::type() {
     declare index=$1
+    if [ ! "${VARIABLES_METADATA[${index}]+isset}" ]; then
+        log "The variable token [${index}] does not exist"
+        exit 1
+    fi
     declare -a metadata=(${VARIABLES_METADATA[$index]})
     RESULT=${metadata[${VARIABLES_OFFSETS[type]}]}
 }
@@ -85,7 +96,12 @@ function variable::type_p() {
 }
 
 function variable::value() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::value ${@}" ; fi
     declare index="${1}"
+    if ! [ "${VARIABLES_VALUES[${index}]+isset}" ]; then
+        log "The variable token [${index}] does not exist"
+        exit 1
+    fi
     RESULT=${VARIABLES_VALUES[${index}]}
 }
 
@@ -101,7 +117,7 @@ function variable::value_p() {
 # Lists are represented as just a list of tokens to variables
 #
 function variable::list::append() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::append ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::append ${@}" ; fi
     declare list_token=$1
     declare value_token=$2
 
@@ -119,7 +135,7 @@ function variable::list::append() {
 }
 
 function variable::list::prepend() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::prepend ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::prepend ${@}" ; fi
     declare list_token=$1
     declare value_token=$2
 
@@ -137,7 +153,7 @@ function variable::list::prepend() {
 }
 
 function variable::list::index() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list::index ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variables_list::index ${@}" ; fi
     declare list_token=$1
     if [[ $(variable::type_p $list_token) != "list" ]]; then
         stderr "Cannot use [variable::list::index] on type [$(variable::type_p $list_token)]"
@@ -154,7 +170,7 @@ function variable::list::index_p() {
 }
 
 function variable::list::first() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::first ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::first ${@}" ; fi
     declare list_token=$1
     if [[ $(variable::type_p $list_token) != "list" ]]; then
         stderr "Cannot use [variable::list::first] on type [$(variable::type_p $list_token)]"
@@ -169,7 +185,7 @@ function variable::list::first_p() {
 }
 
 function variable::list::rest() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::rest ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::rest ${@}" ; fi
     declare list_token=$1
     if [[ $(variable::type_p $list_token) != "list" ]]; then
         stderr "Cannot use [variable::list::rest] on type [$(variable::type_p $list_token)]"
@@ -188,7 +204,7 @@ function variable::list::rest_p() {
 # Returns code 0 if the list is empty, 1 if not
 #
 function variable::list::isEmpty_c() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::isEmpty_c ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::isEmpty_c ${@}" ; fi
     declare token="${1}"
     if [[ $(variable::type_p "$token") != "list" ]]; then
         stderr "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
@@ -210,7 +226,7 @@ function variable::list::isEmpty_c() {
 # Adds an item to the stack
 #
 function variable::stack::push() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::stack::push ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::stack::push ${@}" ; fi
     variable::list::prepend "${@}"
 }
 
@@ -218,7 +234,7 @@ function variable::stack::push() {
 # Removes and returns the most recent item added to the stack
 #
 function variable::stack::pop() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::stack::pop ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::stack::pop ${@}" ; fi
     declare token="${1}"
     if [[ $(variable::type_p "$token") != "list" ]]; then
         stderr "Cannot use [variable::stack::pop] on type [$(variable::type_p $token)]"
@@ -269,7 +285,7 @@ function variable::stack::peek_p() {
 # Adds an item to the queue
 #
 function variable::queue::enqueue() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::queue::enqueue ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::queue::enqueue ${@}" ; fi
     variable::list::append "${@}"
 }
 
@@ -277,14 +293,14 @@ function variable::queue::enqueue() {
 # Removes and returns the oldest item added to the queue
 #
 function variable::queue::dequeue() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::isEmpty_c ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::isEmpty_c ${@}" ; fi
     declare token="${1}"
     if [[ $(variable::type_p "$token") != "list" ]]; then
-        stderr "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
+        log "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
         exit 1
     fi
     if variable::list::isEmpty_c "${token}" ; then
-        stderr "Cannot dequeue from an empty queue"
+        log "Cannot dequeue from an empty queue"
         exit 1
     fi
 
@@ -301,14 +317,14 @@ function variable::queue::dequeue() {
 function variable::queue::peek() {
     declare token="${1}"
     if [[ $(variable::type_p "$token") != "list" ]]; then
-        stderr "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
+        log "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
         exit 1
     fi
     if variable::list::isEmpty_c $token ; then
-        stderr "Cannot peek from an empty queue"
+        log "Cannot peek from an empty queue"
         exit 1
     fi
-    # stderr "peeking at list [$(variable::value_p $token)] / first=$(variable::list::first_p $token)"
+    # log "peeking at list [$(variable::value_p $token)] / first=$(variable::list::first_p $token)"
     declare result=$(variable::list::first_p $token)
     RESULT="${result}"
 }
@@ -316,6 +332,110 @@ function variable::queue::peek_p() {
     variable::queue::peek "${@}"
     echo "$RESULT"
 }
+
+#
+# MAP
+# 
+# Map commands act on a list data structure, assuming the format
+#     <key token> <value token> ... <key token> <value token>
+#
+
+#
+# containsKey_c <map token> <key>
+#
+function variable::map::containsKey_c() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::map::containsKey_c ${@}" ; fi
+
+    declare mapToken="${1}"
+    declare key="${2}"
+    log "Checking value for token [${mapToken}] =? [${VARIABLES_VALUES[${mapToken}]}]"
+    variable::value "${mapToken}" ; declare -a items
+    if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
+    log "RESULT = [${RESULT}]"
+
+    declare size 
+    declare max_index
+    declare currentKey
+    (( size=${#items[@]}, max_index=size-1 ))
+    log "Iterating over size=[${size}], max_index=[${max_index}]"
+    for ((i=0; i<=max_index; i=i+2)); do
+        log "here at i=${i} / items[0]=${items[0]} / items=${items[@]}"
+        variable::value "${items[${i}]}" ; currentKey="${RESULT}"
+        if [ "${currentKey}" == "${key}" ]; then # found it
+            return 0
+        fi
+    done
+    return 1
+}
+
+#
+# get <map token> <key>
+#
+function variable::map::get() {
+    declare mapToken="${1}"
+    declare key="${2}"
+    variable::value $mapToken ; declare -a items
+    if [[ "${RESULT}" == "" ]]; then items=() ; else items=("${RESULT}") ; fi
+
+    declare size 
+    declare max_index
+    declare currentKey
+    (( size=${#items[@]}, max_index=size-1 ))
+    for ((i=0; i<=max_index; i=i+2)); do
+        variable::value ${items[${i}]} ; currentKey="${RESULT}"
+        if [ "${currentKey}" == "${key}" ]; then # found it
+            RESULT="${items[((${i}+1))]}"
+        fi
+    done
+    return 1
+}
+
+function variable::map::get_p() {
+    if ! variable::map::get "${@}"; then
+        log "Map does not contain the specified key [${2}]"
+        exit 1
+    fi
+    echo "$RESULT"
+}
+
+#
+# put <map token> <key token> <value token>
+#
+# Returns 0 if item was found and replaced, 1 if added
+#
+function variable::map::put() {
+    declare mapToken="${1}"
+    declare keyToken="${2}"
+    declare valueToken="${3}"
+
+    variable::value $mapToken ; declare -a items
+    if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
+    log "MAP: $(variable::value_p $mapToken)"
+    log "Adding new key/value to items [$keyToken]=[$valueToken] -> ${items[@]}"
+    variable::value $keyToken   ; declare key="${RESULT}"
+    variable::value $valueToken ; declare value="${RESULT}"
+
+    declare size
+    declare max_index
+    declare currentKey
+    (( size=${#items[@]}, max_index=size-1 ))
+    for ((i=0; i<=max_index; i=i+2)); do
+        variable::value ${items[${i}]} ; currentKey="${RESULT}"
+        if [ "${currentKey}" == "${key}" ]; then # found it
+            items[((${i}+1))]="${valueToken}"
+            variable::set ${mapToken} list "${items[*]}"
+            return 0
+        fi
+    done
+
+    # Not found, add it to the end of the list
+    items["${#items[@]}"]="${keyToken}"
+    items["${#items[@]}"]="${valueToken}"
+    log "Added new key/value to items [$keyToken]=[$valueToken] -> ${items[@]}"
+    variable::set ${mapToken} list "${items[*]}"
+    return 1
+}
+
 
 
 #
@@ -463,6 +583,38 @@ assertEquals "first" "$(variable::value_p ${RESULT})" "queue::dequeue first"
 assertEquals "second" "$(variable::value_p $(variable::queue::peek_p $vCode))" "queue:peek second"
 variable::queue::dequeue $vCode
 assertEquals "second" "$(variable::value_p ${RESULT})" "queue::dequeue second"
+
+#
+# MAP tests
+#
+variable::new list ; vCode=${RESULT}
+variable::new key1 "key one" ; key1=${RESULT}
+variable::new value1 "value one" ; value1=${RESULT}
+variable::new key2 "key two" ; key2=${RESULT}
+variable::new value2 "value two" ; value2=${RESULT}
+
+log "vCode=[${vCode}] key1=[${key1}] value1=[${value1}] key2=[${key2}] value2=[${value2}] "
+
+variable::map::containsKey_c $vCode "no such key"
+assertEquals 1 $? "containsKey false"
+
+variable::map::put $vCode $key1 $value1
+variable::map::containsKey_c $vCode "key 1"
+assertEquals 0 $? "containsKey true"
+assertEquals "value one" "$(variable::map::get_p $vCode "key one")" "get key one"
+
+variable::map::put $vCode $key2 $value2
+variable::map::containsKey_c $vCode "key 2"
+assertEquals 0 $? "containsKey true"
+assertEquals "value two" "$(variable::map::get_p $vCode "key two")" "get key two"
+
+variable::map::put $vCode $key1 $value2
+variable::map::containsKey_c $vCode "key 1"
+assertEquals 0 $? "containsKey true"
+assertEquals "value two" "$(variable::map::get_p $vCode "key one")" "get key one replaced"
+
+
+
 
 if [ "$1" == "debug" ]; then 
     variable::printMetadata

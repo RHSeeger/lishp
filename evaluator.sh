@@ -119,6 +119,10 @@ function evaluator::call_identifier() {
             declare value_2=$(variable::value_p ${values[1]})
             variable::set ${EVALUATOR_VARIABLE} integer "$(( ${value_1} / ${value_2} ))"
             ;;
+        "if")
+            if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_identifier in 'if'" ; fi
+            stderr "[if] not implemented yet"
+            ;;
         *)
             stderr "evaluator::call_identifier / Not implemented [${identifier}]"
             ;;
