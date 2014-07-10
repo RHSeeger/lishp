@@ -1,13 +1,14 @@
 #!/bin/bash
 
 . common.sh
-. logger.sh
+. stderrger.sh
 
 # TODO: Only set this if it doesn't already exist
 
 #
 # Functions that end in _p send their result to stdout (accessed via $(subshell execution))
 #     They cannot modify data, so can only be used in getters
+#     They should only be used for debugging
 #
 # Functions that end in _c return their result via [return 0/1] to signify true/false
 #
@@ -22,12 +23,12 @@ if [ -z "${VARIABLES_METADATA}" ]; then
 
     declare -A VARIABLES_OFFSETS=([type]=0)
 
-    declare VARIABLES_DEBUG=1
+    declare VARIABLES_DEBUG=0
 fi
 
 # == GENERAL ==
 function variable::new() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::new ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::new ${@}" ; fi
 
     if [[ "${1}" == "-name" ]]; then
         shift
@@ -58,15 +59,15 @@ function variable::new() {
     #echo "Result=${index}"
     RESULT="$token"
 }
-function variable::new_p() {
+function _variable::new_p() {
     variable::new "${@}"
     echo "$RESULT"
 }
 
 function variable::set() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::set ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::set ${@}" ; fi
     if [[ ${#@} -ne 3 ]]; then
-        log "Usage: variable::set <variable token> <type> <value>"
+        stderr "Usage: variable::set <variable token> <type> <value>"
         exit 1
     fi
 
@@ -82,30 +83,31 @@ function variable::set() {
 }
 
 function variable::type() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::type ${@}" ; fi
     declare index=$1
     if [ ! "${VARIABLES_METADATA[${index}]+isset}" ]; then
-        log "The variable token [${index}] does not exist"
+        stderr "The variable token [${index}] does not exist"
         exit 1
     fi
     declare -a metadata=(${VARIABLES_METADATA[$index]})
     RESULT=${metadata[${VARIABLES_OFFSETS[type]}]}
 }
-function variable::type_p() {
+function _variable::type_p() {
     variable::type "${@}"
     echo "$RESULT"
 }
 
 function variable::value() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::value ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::value ${@}" ; fi
     declare index="${1}"
     if ! [ "${VARIABLES_VALUES[${index}]+isset}" ]; then
-        log "The variable token [${index}] does not exist"
+        stderr "The variable token [${index}] does not exist"
         exit 1
     fi
     RESULT=${VARIABLES_VALUES[${index}]}
 }
 
-function variable::value_p() {
+function _variable::value_p() {
     variable::value "${@}"
     echo "$RESULT"
 }
@@ -117,12 +119,13 @@ function variable::value_p() {
 # Lists are represented as just a list of tokens to variables
 #
 function variable::list::append() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::append ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::append ${@}" ; fi
     declare list_token=$1
     declare value_token=$2
 
-    if [ "$(variable::type_p ${list_token})" != "list" ]; then
-        stderr "Cannot append to variable [${list_token}] of type [$(variable::type_p ${list_token})]"
+    variable::type "${list_token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
         variable::printMetadata
         exit 1
     fi
@@ -135,12 +138,13 @@ function variable::list::append() {
 }
 
 function variable::list::prepend() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::prepend ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::prepend ${@}" ; fi
     declare list_token=$1
     declare value_token=$2
 
-    if [ "$(variable::type_p ${list_token})" != "list" ]; then
-        stderr "Cannot append to variable [${list_token}] of type [$(variable::type_p ${list_token})]"
+    variable::type "${list_token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
         variable::printMetadata
         exit 1
     fi
@@ -153,49 +157,56 @@ function variable::list::prepend() {
 }
 
 function variable::list::index() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variables_list::index ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list::index ${@}" ; fi
     declare list_token=$1
-    if [[ $(variable::type_p $list_token) != "list" ]]; then
-        stderr "Cannot use [variable::list::index] on type [$(variable::type_p $list_token)]"
+
+    variable::type "${list_token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
         exit 1
     fi
     declare index=$2
-    declare -a value=($(variable::value_p $list_token))
+    variable::value "${list_token}" ; declare -a value=(${RESULT})
     RESULT=${value[$index]}
 }
 
-function variable::list::index_p() {
+function _variable::list::index_p() {
     variable::list::index "${@}"
     echo "$RESULT"
 }
 
 function variable::list::first() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::first ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::first ${@}" ; fi
     declare list_token=$1
-    if [[ $(variable::type_p $list_token) != "list" ]]; then
-        stderr "Cannot use [variable::list::first] on type [$(variable::type_p $list_token)]"
+
+    variable::type "${list_token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
         exit 1
     fi
     variable::list::index ${list_token} 0
 }
 
-function variable::list::first_p() {
+function _variable::list::first_p() {
     variable::list::first "${@}"
     echo "${RESULT}"
 }
 
 function variable::list::rest() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::rest ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::rest ${@}" ; fi
     declare list_token=$1
-    if [[ $(variable::type_p $list_token) != "list" ]]; then
-        stderr "Cannot use [variable::list::rest] on type [$(variable::type_p $list_token)]"
+
+    variable::type "${list_token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
         exit 1
     fi
-    declare -a values=($(variable::value_p $list_token))
+
+    variable::value "${list_token}" ; declare -a values=($RESULT)
     RESULT="${values[@]:1}"
 }
 
-function variable::list::rest_p() {
+function _variable::list::rest_p() {
     variable::list::rest "${@}"
     echo "${RESULT}"
 }
@@ -204,13 +215,16 @@ function variable::list::rest_p() {
 # Returns code 0 if the list is empty, 1 if not
 #
 function variable::list::isEmpty_c() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::isEmpty_c ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::isEmpty_c ${@}" ; fi
     declare token="${1}"
-    if [[ $(variable::type_p "$token") != "list" ]]; then
-        stderr "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
+
+    variable::type "${token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot append to variable [${token}] of type [${$RESULT}]"
         exit 1
     fi
-    declare -a value=($(variable::value_p "${token}"))
+
+    variable::value "${token}" ; declare -a value=(${RESULT})
     [[ ${#value[@]} -eq 0 ]]
     return $?
 }
@@ -226,7 +240,7 @@ function variable::list::isEmpty_c() {
 # Adds an item to the stack
 #
 function variable::stack::push() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::stack::push ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::stack::push ${@}" ; fi
     variable::list::prepend "${@}"
 }
 
@@ -234,10 +248,12 @@ function variable::stack::push() {
 # Removes and returns the most recent item added to the stack
 #
 function variable::stack::pop() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::stack::pop ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::stack::pop ${@}" ; fi
     declare token="${1}"
-    if [[ $(variable::type_p "$token") != "list" ]]; then
-        stderr "Cannot use [variable::stack::pop] on type [$(variable::type_p $token)]"
+
+    variable::type "${token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot use [variable::stack::pop] on type [${$RESULT}]"
         exit 1
     fi
     if variable::list::isEmpty_c "${token}" ; then
@@ -245,9 +261,9 @@ function variable::stack::pop() {
         exit 1
     fi
 
-    declare result=$(variable::queue::peek_p "${token}")
-    declare type=$(variable::type_p $token)
-    declare value=$(variable::list::rest_p $token)
+    variable::queue::peek "${token}" ; declare result=$RESULT
+    variable::type $token ; declare type=$RESULT
+    variable::list::rest $token ; declare value=$RESULT
     variable::set "$token" "$type" "$value"
     RESULT="${result}"
 }
@@ -257,8 +273,9 @@ function variable::stack::pop() {
 #
 function variable::stack::peek() {
     declare token="${1}"
-    if [[ $(variable::type_p "$token") != "list" ]]; then
-        stderr "Cannot use [variable::stack::peek] on type [$(variable::type_p $token)]"
+    variable::type "${token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot use [variable::stack::peek] on type [${$RESULT}]"
         exit 1
     fi
     if variable::list::isEmpty_c $token ; then
@@ -266,10 +283,10 @@ function variable::stack::peek() {
         exit 1
     fi
 
-    declare result=$(variable::list::first_p $token)
+variable::list::first $token ;    declare result=$RESULT
     RESULT="${result}"
 }
-function variable::stack::peek_p() {
+function _variable::stack::peek_p() {
     variable::stack::peek "${@}"
     echo "$RESULT"
 }
@@ -285,7 +302,7 @@ function variable::stack::peek_p() {
 # Adds an item to the queue
 #
 function variable::queue::enqueue() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::queue::enqueue ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::queue::enqueue ${@}" ; fi
     variable::list::append "${@}"
 }
 
@@ -293,20 +310,21 @@ function variable::queue::enqueue() {
 # Removes and returns the oldest item added to the queue
 #
 function variable::queue::dequeue() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::list::isEmpty_c ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::isEmpty_c ${@}" ; fi
     declare token="${1}"
-    if [[ $(variable::type_p "$token") != "list" ]]; then
-        log "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
+    variable::type "${token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot use [variable::queue::dequeue] on type [${$RESULT}]"
         exit 1
     fi
     if variable::list::isEmpty_c "${token}" ; then
-        log "Cannot dequeue from an empty queue"
+        stderr "Cannot dequeue from an empty queue"
         exit 1
     fi
 
-    declare result=$(variable::queue::peek_p "${token}")
-    declare type=$(variable::type_p $token)
-    declare value=$(variable::list::rest_p $token)
+    variable::queue::peek "${token}";    declare result=$RESULT
+    variable::type $token;    declare type=$RESULT
+    variable::list::rest $token;    declare value=$RESULT
     variable::set "$token" "$type" "$value"
     RESULT="${result}"
 }
@@ -316,19 +334,21 @@ function variable::queue::dequeue() {
 #
 function variable::queue::peek() {
     declare token="${1}"
-    if [[ $(variable::type_p "$token") != "list" ]]; then
-        log "Cannot use [variable::list::isEmpty_c] on type [$(variable::type_p $token)]"
+
+    variable::type "${token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot use [variable::queue::dequeue] on type [${$RESULT}]"
         exit 1
     fi
     if variable::list::isEmpty_c $token ; then
-        log "Cannot peek from an empty queue"
+        stderr "Cannot peek from an empty queue"
         exit 1
     fi
-    # log "peeking at list [$(variable::value_p $token)] / first=$(variable::list::first_p $token)"
-    declare result=$(variable::list::first_p $token)
+    # stderr "peeking at list [$(variable::value_p $token)] / first=$(variable::list::first_p $token)"
+    variable::list::first $token;    declare result=$RESULT
     RESULT="${result}"
 }
-function variable::queue::peek_p() {
+function _variable::queue::peek_p() {
     variable::queue::peek "${@}"
     echo "$RESULT"
 }
@@ -344,7 +364,7 @@ function variable::queue::peek_p() {
 # containsKey_c <map token> <key>
 #
 function variable::map::containsKey_c() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then log "variable::map::containsKey_c ${@}" ; fi
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::map::containsKey_c ${@}" ; fi
 
     declare mapToken="${1}"
     declare key="${2}"
@@ -372,27 +392,31 @@ function variable::map::containsKey_c() {
 # get <map token> <key>
 #
 function variable::map::get() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::map::get ${@}" ; fi
+
     declare mapToken="${1}"
     declare key="${2}"
-    variable::value $mapToken ; declare -a items
-    if [[ "${RESULT}" == "" ]]; then items=() ; else items=("${RESULT}") ; fi
-
+    declare -a items
+    variable::value $mapToken
+    if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
+    #stderr "Items (${#items[@]}): ${items[@]}"
     declare size 
     declare max_index
     declare currentKey
     (( size=${#items[@]}, max_index=size-1 ))
     for ((i=0; i<=max_index; i=i+2)); do
-        variable::value ${items[${i}]} ; currentKey="${RESULT}"
+        variable::value "${items[${i}]}" ; currentKey="${RESULT}"
         if [ "${currentKey}" == "${key}" ]; then # found it
-            RESULT="${items[((${i}+1))]}"
+            variable::value "${items[((${i}+1))]}" ; RESULT="${items[((${i}+1))]}"
+            return 0
         fi
     done
     return 1
 }
 
-function variable::map::get_p() {
+function _variable::map::get_p() {
     if ! variable::map::get "${@}"; then
-        log "Map does not contain the specified key [${2}]"
+        stderr "Map does not contain the specified key [${2}]"
         exit 1
     fi
     echo "$RESULT"
@@ -410,7 +434,7 @@ function variable::map::put() {
 
     variable::value $mapToken ; declare -a items
     if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
-    log "MAP: $(variable::value_p $mapToken)"
+    log "MAP: $(_variable::value_p $mapToken)"
     log "Adding new key/value to items [$keyToken]=[$valueToken] -> ${items[@]}"
     variable::value $keyToken   ; declare key="${RESULT}"
     variable::value $valueToken ; declare value="${RESULT}"
@@ -456,12 +480,12 @@ function variable::printMetadata() {
 function variable::print() {
     declare token=$1
     declare indent=$2
-    declare type=$(variable::type_p ${token})
+variable::type ${token};    declare type=$RESULT
 
     case ${type} in
         list)
             echo "${indent}${type}(${token}) :: ["
-            declare -a values=($(variable::value_p ${token}))
+            variable::value ${token}; declare -a values=($RESULT)
 #            echo "${indent}  ${values[@]}"
             for value in ${values[@]}; do
                 variable::print ${value} "${indent}  "
@@ -470,10 +494,10 @@ function variable::print() {
             # echo "${indent}${type} :: size=${#value[@]} :: ${value[@]}"
             ;;
         string)
-            echo "${indent}${type}(${token}) :: [$(variable::value_p ${token})]"
+            echo "${indent}${type}(${token}) :: [$(_variable::value_p ${token})]"
             ;;
         integer)
-            echo "${indent}${type}(${token}) :: [$(variable::value_p ${token})]"
+            echo "${indent}${type}(${token}) :: [$(_variable::value_p ${token})]"
             ;;
         *)
             stderr "Invalid variable type [${type}] for token [${token}]"
@@ -491,25 +515,27 @@ fi
 
 
 # == ATOM TESTS ==
-variable::new integer 12
-declare atomId_1=$RESULT
+variable::new integer 12 ; \
+    declare atomId_1=$RESULT
 
-variable::type $atomId_1
-assertEquals integer "$RESULT" Type of first atom
-assertEquals integer "$(variable::type_p $atomId_1)" Type of first atom
-variable::value $atomId_1
-assertEquals 12 "$RESULT" Value of first atom
-assertEquals 12 "$(variable::value_p $atomId_1)" Value of first atom
+variable::type $atomId_1 ; \
+    assertEquals integer "$RESULT" Type of first atom
+variable::type "${atomId_1}" ; \
+    assertEquals integer "$RESULT" Type of first atom
+variable::value $atomId_1 ; \
+    assertEquals 12 "$RESULT" Value of first atom
+variable::value $atomId_1 ; \
+    assertEquals 12 "$RESULT" Value of first atom
 
-variable::new string "hello there"
-declare atomId_2=$RESULT
+variable::new string "hello there" ; \
+    declare atomId_2=$RESULT
 
-variable::type $atomId_2
-assertEquals string "$RESULT" Type of second atom
-variable::value $atomId_2
-assertEquals "hello there" "$RESULT" Value of second atom
-variable::value $atomId_1
-assertEquals 12 "$RESULT" Value of first atom remains
+variable::type $atomId_2 ; \
+    assertEquals string "$RESULT" Type of second atom
+variable::value $atomId_2 ; \
+    assertEquals "hello there" "$RESULT" Value of second atom
+variable::value $atomId_1 ; \
+    assertEquals 12 "$RESULT" Value of first atom remains
 
 # == LIST TESTS ==
 # create a new list
@@ -518,29 +544,39 @@ assertEquals 12 "$RESULT" Value of first atom remains
 # test its size is 1
 # retrieve value of first item (atom) in list
 
-variable::new list ; vCode=${RESULT}
+variable::new list           ; vCode=${RESULT}
 variable::new identifier "+" ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
+variable::new integer 5      ; variable::list::append ${vCode} ${RESULT}
+variable::new integer 2      ; variable::list::append ${vCode} ${RESULT}
 
-assertEquals list "$(variable::type_p $vCode)" "List type"
-assertEquals identifier "$(variable::type_p $(variable::list::index_p $vCode 0))" "List first item type"
-assertEquals integer "$(variable::type_p $(variable::list::index_p $vCode 1))" "List first item type"
-assertEquals integer "$(variable::type_p $(variable::list::index_p $vCode 2))" "List first item type"
+variable::type $vCode ; \
+    assertEquals list "$RESULT" "List type"
+variable::list::index $vCode 0 ; variable::type "${RESULT}" ; \
+    assertEquals identifier "$RESULT" "List first item type"
+variable::list::index $vCode 1 ; variable::type "${RESULT}" ; \
+    assertEquals integer "${RESULT}" "List first item type"
+variable::list::index $vCode 2 ; variable::type "${RESULT}" ; \
+    assertEquals integer "${RESULT}" "List first item type"
 
 variable::new list ; vCode=${RESULT}
 variable::new string "a" ; A=${RESULT} ; variable::list::append ${vCode} $A
 variable::new string "b" ; B=${RESULT} ; variable::list::append ${vCode} $B
 variable::new string "c" ; C=${RESULT} ; variable::list::append ${vCode} $C
 
-assertEquals "$B" "$(variable::list::index_p $vCode 1)" "index_p"
-assertEquals "$A" "$(variable::list::first_p $vCode)" "first_p"
-assertEquals "${B} ${C}" "$(variable::list::rest_p $vCode 0)" "rest_p"
+variable::list::index $vCode 1 ; \
+    assertEquals "$B" "$RESULT" "index_p"
+variable::list::first $vCode ; \
+    assertEquals "$A" "$RESULT" "first_p"
+variable::list::rest $vCode 0 ; \
+    assertEquals "${B} ${C}" "$RESULT" "rest_p"
 
 variable::new -name "EVAL_RESULT" integer 4 ; declare varname="${RESULT}"
+
 assertEquals "EVAL_RESULT" "${varname}" "Non-auto variable name"
-assertEquals integer $(variable::type_p "${varname}") "Non-auto type"
-assertEquals 4 $(variable::value_p "${varname}") "Non-auto value"
+variable::type "${varname}" ; \
+    assertEquals integer "${RESULT}" "Non-auto type"
+variable::value "${varname}" ; \
+    assertEquals 4 "${RESULT}" "Non-auto value"
 
 variable::new list ; vCode=${RESULT}
 variable::list::isEmpty_c ${vCode}
@@ -553,8 +589,10 @@ assertEquals 1 $? "Return code false (1)"
 variable::new list ; vCode=${RESULT}
 variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
 variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
-assertEquals 5 "$(variable::value_p $(variable::list::index_p $vCode 0))" "append / 0"
-assertEquals 2 "$(variable::value_p $(variable::list::index_p $vCode 1))" "append / 1"
+variable::list::index $vCode 0 ; variable::value "${RESULT}" ; \
+    assertEquals 5 "$RESULT" "append / 0"
+variable::list::index $vCode 1 ; variable::value "$RESULT" ; \
+    assertEquals 2 "$RESULT" "append / 1"
 
 #
 # STACK tests
@@ -563,12 +601,15 @@ variable::new list ; vCode=${RESULT}
 variable::new string "first" ; variable::stack::push ${vCode} ${RESULT}
 variable::new string "second" ; variable::stack::push ${vCode} ${RESULT}
 variable::new string "third" ; variable::stack::push ${vCode} ${RESULT}
-assertEquals "third" "$(variable::value_p $(variable::stack::peek_p $vCode))" "stack::peek first"
-variable::stack::pop $vCode
-assertEquals "third" "$(variable::value_p ${RESULT})" "stack::pop first"
-assertEquals "second" "$(variable::value_p $(variable::stack::peek_p $vCode))" "stack::peek second"
-variable::stack::pop $vCode
-assertEquals "second" "$(variable::value_p ${RESULT})" "queue::dequeue second"
+
+variable::stack::peek $vCode ; variable::value "${RESULT}" ; \
+    assertEquals "third" "$RESULT" "stack::peek first"
+variable::stack::pop $vCode ; variable::value "${RESULT}" ; \
+    assertEquals "third" "$RESULT" "stack::pop first"
+variable::stack::peek $vCode ; variable::value "${RESULT}" ; \
+    assertEquals "second" "$RESULT" "stack::peek second"
+variable::stack::pop $vCode ; variable::value "${RESULT}" ; \
+    assertEquals "second" "${RESULT}" "queue::dequeue second"
 
 #
 # QUEUE tests
@@ -577,12 +618,15 @@ variable::new list ; vCode=${RESULT}
 variable::new string "first" ; variable::queue::enqueue ${vCode} ${RESULT}
 variable::new string "second" ; variable::queue::enqueue ${vCode} ${RESULT}
 variable::new string "third" ; variable::queue::enqueue ${vCode} ${RESULT}
-assertEquals "first" "$(variable::value_p $(variable::queue::peek_p $vCode))" "queue:peek first"
-variable::queue::dequeue $vCode
-assertEquals "first" "$(variable::value_p ${RESULT})" "queue::dequeue first"
-assertEquals "second" "$(variable::value_p $(variable::queue::peek_p $vCode))" "queue:peek second"
-variable::queue::dequeue $vCode
-assertEquals "second" "$(variable::value_p ${RESULT})" "queue::dequeue second"
+
+variable::queue::peek $vCode ; variable::value "${RESULT}" ; \
+    assertEquals "first" "$RESULT" "queue:peek first"
+variable::queue::dequeue $vCode ; variable::value "${RESULT}" ; \
+    assertEquals "first" "$RESULT" "queue::dequeue first"
+variable::queue::peek $vCode ; variable::value "${RESULT}" ; \
+    assertEquals "second" "$RESULT" "queue:peek second"
+variable::queue::dequeue $vCode ; variable::value "${RESULT}" ; \
+    assertEquals "second" "$RESULT" "queue::dequeue second"
 
 #
 # MAP tests
@@ -593,26 +637,28 @@ variable::new value1 "value one" ; value1=${RESULT}
 variable::new key2 "key two" ; key2=${RESULT}
 variable::new value2 "value two" ; value2=${RESULT}
 
-log "vCode=[${vCode}] key1=[${key1}] value1=[${value1}] key2=[${key2}] value2=[${value2}] "
+# stderr "vCode=[${vCode}] key1=[${key1}] value1=[${value1}] key2=[${key2}] value2=[${value2}] "
 
 variable::map::containsKey_c $vCode "no such key"
 assertEquals 1 $? "containsKey false"
 
-variable::map::put $vCode $key1 $value1
-variable::map::containsKey_c $vCode "key 1"
-assertEquals 0 $? "containsKey true"
-assertEquals "value one" "$(variable::map::get_p $vCode "key one")" "get key one"
+variable::map::put $vCode $key1 $value1 # put "key one" "value one"
+variable::map::containsKey_c $vCode "key one"
+assertEquals 0 $? "containsKey one true"
+variable::map::get "$vCode" "key one" ; variable::value "${RESULT}" \
+    assertEquals "value one" "$RESULT" "get key one"
 
-variable::map::put $vCode $key2 $value2
-variable::map::containsKey_c $vCode "key 2"
-assertEquals 0 $? "containsKey true"
-assertEquals "value two" "$(variable::map::get_p $vCode "key two")" "get key two"
+variable::map::put $vCode $key2 $value2 # put "key two" "value two"
+variable::map::containsKey_c $vCode "key two"
+assertEquals 0 $? "containsKey two true"
+variable::map::get $vCode "key two" ; variable::value "${RESULT}" \
+    assertEquals "value two" "$RESULT" "get key two"
 
-variable::map::put $vCode $key1 $value2
-variable::map::containsKey_c $vCode "key 1"
-assertEquals 0 $? "containsKey true"
-assertEquals "value two" "$(variable::map::get_p $vCode "key one")" "get key one replaced"
-
+variable::map::put $vCode $key1 $value2 # put "key one" "value two"
+variable::map::containsKey_c $vCode "key one"
+assertEquals 0 $? "containsKey one replaced true"
+variable::map::get $vCode "key one" ; variable::value "${RESULT}" \
+    assertEquals "value two" "$RESULT" "get key one replaced"
 
 
 
