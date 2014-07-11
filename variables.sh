@@ -519,23 +519,23 @@ variable::new integer 12 ; \
     declare atomId_1=$RESULT
 
 variable::type $atomId_1 ; \
-    assertEquals integer "$RESULT" Type of first atom
+    assert::equals integer "$RESULT" Type of first atom
 variable::type "${atomId_1}" ; \
-    assertEquals integer "$RESULT" Type of first atom
+    assert::equals integer "$RESULT" Type of first atom
 variable::value $atomId_1 ; \
-    assertEquals 12 "$RESULT" Value of first atom
+    assert::equals 12 "$RESULT" Value of first atom
 variable::value $atomId_1 ; \
-    assertEquals 12 "$RESULT" Value of first atom
+    assert::equals 12 "$RESULT" Value of first atom
 
 variable::new string "hello there" ; \
     declare atomId_2=$RESULT
 
 variable::type $atomId_2 ; \
-    assertEquals string "$RESULT" Type of second atom
+    assert::equals string "$RESULT" Type of second atom
 variable::value $atomId_2 ; \
-    assertEquals "hello there" "$RESULT" Value of second atom
+    assert::equals "hello there" "$RESULT" Value of second atom
 variable::value $atomId_1 ; \
-    assertEquals 12 "$RESULT" Value of first atom remains
+    assert::equals 12 "$RESULT" Value of first atom remains
 
 # == LIST TESTS ==
 # create a new list
@@ -550,13 +550,13 @@ variable::new integer 5      ; variable::list::append ${vCode} ${RESULT}
 variable::new integer 2      ; variable::list::append ${vCode} ${RESULT}
 
 variable::type $vCode ; \
-    assertEquals list "$RESULT" "List type"
+    assert::equals list "$RESULT" "List type"
 variable::list::index $vCode 0 ; variable::type "${RESULT}" ; \
-    assertEquals identifier "$RESULT" "List first item type"
+    assert::equals identifier "$RESULT" "List first item type"
 variable::list::index $vCode 1 ; variable::type "${RESULT}" ; \
-    assertEquals integer "${RESULT}" "List first item type"
+    assert::equals integer "${RESULT}" "List first item type"
 variable::list::index $vCode 2 ; variable::type "${RESULT}" ; \
-    assertEquals integer "${RESULT}" "List first item type"
+    assert::equals integer "${RESULT}" "List first item type"
 
 variable::new list ; vCode=${RESULT}
 variable::new string "a" ; A=${RESULT} ; variable::list::append ${vCode} $A
@@ -564,35 +564,35 @@ variable::new string "b" ; B=${RESULT} ; variable::list::append ${vCode} $B
 variable::new string "c" ; C=${RESULT} ; variable::list::append ${vCode} $C
 
 variable::list::index $vCode 1 ; \
-    assertEquals "$B" "$RESULT" "index_p"
+    assert::equals "$B" "$RESULT" "index_p"
 variable::list::first $vCode ; \
-    assertEquals "$A" "$RESULT" "first_p"
+    assert::equals "$A" "$RESULT" "first_p"
 variable::list::rest $vCode 0 ; \
-    assertEquals "${B} ${C}" "$RESULT" "rest_p"
+    assert::equals "${B} ${C}" "$RESULT" "rest_p"
 
 variable::new -name "EVAL_RESULT" integer 4 ; declare varname="${RESULT}"
 
-assertEquals "EVAL_RESULT" "${varname}" "Non-auto variable name"
+assert::equals "EVAL_RESULT" "${varname}" "Non-auto variable name"
 variable::type "${varname}" ; \
-    assertEquals integer "${RESULT}" "Non-auto type"
+    assert::equals integer "${RESULT}" "Non-auto type"
 variable::value "${varname}" ; \
-    assertEquals 4 "${RESULT}" "Non-auto value"
+    assert::equals 4 "${RESULT}" "Non-auto value"
 
 variable::new list ; vCode=${RESULT}
 variable::list::isEmpty_c ${vCode}
-assertEquals 0 $? "Return code true (0)"
+assert::equals 0 $? "Return code true (0)"
 variable::new identifier "+" ; variable::list::append ${vCode} ${RESULT}
 variable::list::isEmpty_c ${vCode}
-assertEquals 1 $? "Return code false (1)"
+assert::equals 1 $? "Return code false (1)"
 
 # append
 variable::new list ; vCode=${RESULT}
 variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
 variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
 variable::list::index $vCode 0 ; variable::value "${RESULT}" ; \
-    assertEquals 5 "$RESULT" "append / 0"
+    assert::equals 5 "$RESULT" "append / 0"
 variable::list::index $vCode 1 ; variable::value "$RESULT" ; \
-    assertEquals 2 "$RESULT" "append / 1"
+    assert::equals 2 "$RESULT" "append / 1"
 
 #
 # STACK tests
@@ -603,13 +603,13 @@ variable::new string "second" ; variable::stack::push ${vCode} ${RESULT}
 variable::new string "third" ; variable::stack::push ${vCode} ${RESULT}
 
 variable::stack::peek $vCode ; variable::value "${RESULT}" ; \
-    assertEquals "third" "$RESULT" "stack::peek first"
+    assert::equals "third" "$RESULT" "stack::peek first"
 variable::stack::pop $vCode ; variable::value "${RESULT}" ; \
-    assertEquals "third" "$RESULT" "stack::pop first"
+    assert::equals "third" "$RESULT" "stack::pop first"
 variable::stack::peek $vCode ; variable::value "${RESULT}" ; \
-    assertEquals "second" "$RESULT" "stack::peek second"
+    assert::equals "second" "$RESULT" "stack::peek second"
 variable::stack::pop $vCode ; variable::value "${RESULT}" ; \
-    assertEquals "second" "${RESULT}" "queue::dequeue second"
+    assert::equals "second" "${RESULT}" "queue::dequeue second"
 
 #
 # QUEUE tests
@@ -620,13 +620,13 @@ variable::new string "second" ; variable::queue::enqueue ${vCode} ${RESULT}
 variable::new string "third" ; variable::queue::enqueue ${vCode} ${RESULT}
 
 variable::queue::peek $vCode ; variable::value "${RESULT}" ; \
-    assertEquals "first" "$RESULT" "queue:peek first"
+    assert::equals "first" "$RESULT" "queue:peek first"
 variable::queue::dequeue $vCode ; variable::value "${RESULT}" ; \
-    assertEquals "first" "$RESULT" "queue::dequeue first"
+    assert::equals "first" "$RESULT" "queue::dequeue first"
 variable::queue::peek $vCode ; variable::value "${RESULT}" ; \
-    assertEquals "second" "$RESULT" "queue:peek second"
+    assert::equals "second" "$RESULT" "queue:peek second"
 variable::queue::dequeue $vCode ; variable::value "${RESULT}" ; \
-    assertEquals "second" "$RESULT" "queue::dequeue second"
+    assert::equals "second" "$RESULT" "queue::dequeue second"
 
 #
 # MAP tests
@@ -640,27 +640,27 @@ variable::new value2 "value two" ; value2=${RESULT}
 # stderr "vCode=[${vCode}] key1=[${key1}] value1=[${value1}] key2=[${key2}] value2=[${value2}] "
 
 variable::map::containsKey_c $vCode "no such key"
-assertEquals 1 $? "containsKey false"
+assert::equals 1 $? "containsKey false"
 
 variable::map::put $vCode $key1 $value1 # put "key one" "value one"
 variable::map::containsKey_c $vCode "key one"
-assertEquals 0 $? "containsKey one true"
+assert::equals 0 $? "containsKey one true"
 variable::map::get "$vCode" "key one" ; variable::value "${RESULT}" \
-    assertEquals "value one" "$RESULT" "get key one"
+    assert::equals "value one" "$RESULT" "get key one"
 
 variable::map::put $vCode $key2 $value2 # put "key two" "value two"
 variable::map::containsKey_c $vCode "key two"
-assertEquals 0 $? "containsKey two true"
+assert::equals 0 $? "containsKey two true"
 variable::map::get $vCode "key two" ; variable::value "${RESULT}" \
-    assertEquals "value two" "$RESULT" "get key two"
+    assert::equals "value two" "$RESULT" "get key two"
 
 variable::map::put $vCode $key1 $value2 # put "key one" "value two"
 variable::map::containsKey_c $vCode "key one"
-assertEquals 0 $? "containsKey one replaced true"
+assert::equals 0 $? "containsKey one replaced true"
 variable::map::get $vCode "key one" ; variable::value "${RESULT}" \
-    assertEquals "value two" "$RESULT" "get key one replaced"
+    assert::equals "value two" "$RESULT" "get key one replaced"
 
-
+assert::report
 
 if [ "$1" == "debug" ]; then 
     variable::printMetadata
