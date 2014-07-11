@@ -16,17 +16,19 @@ function evaluator::eval() {
     declare token=$1
     variable::set ${EVALUATOR_VARIABLE} nil nil
 
-    declare type=$(variable::type_p ${token})
+    variable::type ${token} ; declare type="${RESULT}"
     case ${type} in
         list)
             evaluator::eval_list "$token"
             ;;
         integer)
-            variable::set ${EVALUATOR_VARIABLE} "${type}" "$(variable::value_p ${token})"
+            variable::value ${token}
+            variable::set ${EVALUATOR_VARIABLE} "${type}" "$RESULT"
             return
             ;;
         string)
-            variable::set ${EVALUATOR_VARIABLE} "${type}" "$(variable::value_p ${token})"
+            variable::value ${token}
+            variable::set ${EVALUATOR_VARIABLE} "${type}" "$RESULT"
             return
             ;;
         identifier) # Lookup the identifier in the environment and return it's value
@@ -40,7 +42,8 @@ function evaluator::eval() {
             ;;
     esac
     
-    variable::new "$(variable::type_p ${EVALUATOR_VARIABLE})" "$(variable::value_p ${EVALUATOR_VARIABLE})"
+    variable::clone "${EVALUATOR_VARIABLE}"
+    #variable::new "$(variable::type_p ${EVALUATOR_VARIABLE})" "$(variable::value_p ${EVALUATOR_VARIABLE})"
 }
 
 function evaluator::eval_list() {
@@ -49,20 +52,22 @@ function evaluator::eval_list() {
     declare token=$1
     variable::set ${EVALUATOR_VARIABLE} nil nil
 
-    if [ $(variable::type_p "$token") != "list" ]; then
+    variable::type "$token"
+    if [ "${RESULT}" != "list" ]; then
         stderr "evaluator::list / must be a list"
         exit 1
     fi
 
-    if [ variable::list::length == 0 ]; then 
+    variable::list::length "${token}"
+    if [ "${RESULT}" -eq 0 ]; then 
         variable::set ${EVALUATOR_VARIABLE} nil nil
         return
     fi
 
-    declare -a value=($(variable::value_p $token))
-    declare type_1=$(variable::type_p ${value[0]})
-    declare value_1=$(variable::value_p ${value[0]})
-    declare -a args=($(variable::list::rest_p $token))
+    variable::value $token ;      declare -a value=($RESULT)
+    variable::type ${value[0]} ;  declare type_1="${RESULT}"
+    variable::value ${value[0]} ; declare value_1="${RESULT}"
+    variable::list::rest $token ; declare -a args=(${RESULT})
 
     case "${type_1}" in
         identifier) # Lookup the identifier in the environment and return it's value
@@ -94,29 +99,29 @@ function evaluator::call_identifier() {
         +)
             # TODO: check length and types
             if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_identifier in +" ; fi
-            declare value_1=$(variable::value_p ${values[0]})
-            declare value_2=$(variable::value_p ${values[1]})
+            variable::value ${values[0]} ; declare value_1="${RESULT}"
+            variable::value ${values[1]} ; declare value_2="${RESULT}"
             variable::set ${EVALUATOR_VARIABLE} integer "$(( ${value_1} + ${value_2} ))"
             ;;
         a)
             # TODO: check length and types
             if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_identifier in *" ; fi
-            declare value_1=$(variable::value_p ${values[0]})
-            declare value_2=$(variable::value_p ${values[1]})
+            variable::value ${values[0]} ; declare value_1="${RESULT}"
+            variable::value ${values[1]} ; declare value_2="${RESULT}"
             variable::set ${EVALUATOR_VARIABLE} integer "$(( ${value_1} * ${value_2} ))"
             ;;
         -)
             # TODO: check length and types
             if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_identifier in -" ; fi
-            declare value_1=$(variable::value_p ${values[0]})
-            declare value_2=$(variable::value_p ${values[1]})
+            variable::value ${values[0]} ; declare value_1="${RESULT}"
+            variable::value ${values[1]} ; declare value_2="${RESULT}"
             variable::set ${EVALUATOR_VARIABLE} integer "$(( ${value_1} - ${value_2} ))"
             ;;
         /)
             # TODO: check length and types
             if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_identifier in /" ; fi
-            declare value_1=$(variable::value_p ${values[0]})
-            declare value_2=$(variable::value_p ${values[1]})
+            variable::value ${values[0]} ; declare value_1="${RESULT}"
+            variable::value ${values[1]} ; declare value_2="${RESULT}"
             variable::set ${EVALUATOR_VARIABLE} integer "$(( ${value_1} / ${value_2} ))"
             ;;
         "if")
@@ -143,7 +148,8 @@ variable::new identifier '+' ; variable::list::append ${vCode} ${RESULT}
 variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
 variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
 evaluator::eval $vCode
-assertEquals 7 "$(variable::value_p ${RESULT})" '+ 5 2'
+variable::value ${RESULT} ; \
+    assert::equals 7 "$RESULT" '+ 5 2'
 #variable::printMetadata
 
 variable::new list ; vCode=${RESULT}
@@ -152,7 +158,8 @@ variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
 variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
 #variable::printMetadata
 evaluator::eval $vCode
-assertEquals 3 "$(variable::value_p ${RESULT})" '- 5 2'
+variable::value ${RESULT} ; \
+    assert::equals 3 "$RESULT" '- 5 2'
 
 variable::new list ; vCode=${RESULT}
 variable::new identifier 'a' ; variable::list::append ${vCode} ${RESULT}
@@ -160,7 +167,8 @@ variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
 variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
 #variable::printMetadata
 evaluator::eval $vCode
-assertEquals 10 "$(variable::value_p ${RESULT})" '* 5 2'
+variable::value ${RESULT} ; \
+    assert::equals 10 "$RESULT" '* 5 2'
 
 variable::new list ; vCode=${RESULT}
 variable::new identifier '/' ; variable::list::append ${vCode} ${RESULT}
@@ -168,9 +176,15 @@ variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
 variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
 #variable::printMetadata
 evaluator::eval $vCode
-assertEquals 2 "$(variable::value_p ${RESULT})" '/ 5 2'
+variable::value ${RESULT} ; \
+    assert::equals 2 "$RESULT" '/ 5 2'
 
 #variable::printMetadata
 #echo "typeof ${vCode}=$(variable::type_p $vCode)"
 
-variable::printMetadata
+assert::report
+
+if [ "$1" == "debug" ]; then 
+    variable::printMetadata
+fi
+

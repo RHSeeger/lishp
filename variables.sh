@@ -59,9 +59,38 @@ function variable::new() {
     #echo "Result=${index}"
     RESULT="$token"
 }
+
 function _variable::new_p() {
     variable::new "${@}"
     echo "$RESULT"
+}
+
+function variable::clone() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::clone ${@}" ; fi
+
+    if [[ "${1}" == "-name" ]]; then
+        shift
+        declare token="${1}"
+        shift
+    else
+        declare token="auto#${VARIABLES_INDEX}"
+        VARIABLES_INDEX=$(( ${VARIABLES_INDEX} + 1 ))
+    fi
+
+    if [[ "${#@}" -lt 1 || "${#@}" -gt 2 ]]; then
+        stderr "Usage: variable::new ?name? <type> <value>"
+        exit 1
+    fi
+
+    declare from_token="${1}"
+    variable::type "${from_token}" ; declare type="${RESULT}"
+    variable::value "${from_token}" ; declare value="${RESULT}"
+
+    declare -a metadata=($type)
+    VARIABLES_METADATA[${token}]="${metadata[@]}"
+    VARIABLES_VALUES[${token}]="$value"
+
+    RESULT="$token"
 }
 
 function variable::set() {
@@ -154,6 +183,21 @@ function variable::list::prepend() {
     VARIABLES_VALUES[$list_token]=${new_value[@]}
 
     RESULT=${#list_value[@]}
+}
+
+function variable::list::length() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::length ${@}" ; fi
+    declare list_token=$1
+
+    variable::type "${list_token}"
+    if [ "${RESULT}" != "list" ]; then
+        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
+        variable::printMetadata
+        exit 1
+    fi
+
+    variable::value "${list_token}" ; declare -a value=("${RESULT}")
+    RESULT="${#value[@]}"
 }
 
 function variable::list::index() {
