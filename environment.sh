@@ -13,6 +13,10 @@
 . common.sh
 . variables.sh
 
+if [ -z "${ENVIRONMENT_DEBUG}" ]; then
+    declare ENVIRONMENT_DEBUG=0
+fi
+
 #
 # environment::new
 #
@@ -22,8 +26,10 @@
 # Returns: The variable-token for the newly created environment
 #
 function environment::new() {
+    if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::new ${@}" ; fi
+
     variable::new list ; env=${RESULT}
-    variable::new list ; variable::list::append ${env} ${RESULT}
+    variable::new list ; variable::stack::push "${env}" "${RESULT}"
     RESULT="${env}"
 }
 
@@ -35,9 +41,11 @@ function environment::new() {
 # Returns: The same environment variable-token that was passed in
 #
 function environment::pushScope() {
+    if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::pushScope ${@}" ; fi
+
     declare env="${1}"
-    variable::new list ; variable::list::push ${env} ${RESULT}
-    RESULT="${env}"
+    variable::new list ; variable::stack::push "${env}" "${RESULT}"
+    RESULT=${env}
 }
 
 #
@@ -50,8 +58,10 @@ function environment::pushScope() {
 # Returns: The same environment variable-token that was passed in
 #
 function environment::popScope() {
+    if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::popScope ${@}" ; fi
+
     declare env="${1}"
-    variable::new list ; variable::list::pop ${env} 
+    variable::new list ; variable::stack::pop ${env} 
     RESULT="${env}"
 }
 
@@ -61,21 +71,30 @@ function environment::popScope() {
 # Sets a name/variable-token pair on the top level of the environment
 # TODO: MAKE IT WORK
 function environment::setVariable() {
+    if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::setVariable ${@}" ; fi
+
     declare env="${1}"
     declare name="${2}"
     declare value_token="${3}"
 
-    declare -a scope=($(variable::list::last_p "${env}"))
-    declare size, max_index
-    (( size=${#scope[@]}, max_index=size-1 ))
-    #declare size=${#scope[@]}
-    #declare max_index=((size - 1))
-    for ((i=0; i<=max_index; i=i+2)); do
-        current_name="${scope[${i}]}"
-        if [ "${scope[${i}]}" == "${name}" ]; then # found it
-            RESULT="${scope[$(${i}+1)]}"
+    variable::new string "${name}" ; declare nameToken="${RESULT}"
+
+    variable::value "${env}" ; declare -a scopes=($RESULT)
+    declare -i size
+    declare -i max_index
+    (( size=${#scopes[@]}, max_index=size-1 ))
+    for ((i=0; i<=max_index; i=i+1)); do
+        declare currentScope="${scopes[${i}]}"
+        if variable::map::containsKey_c "${currentScope}" "${name}" ; then
+            variable::map::put "${currentScope}" "${nameToken}" "${value_token}"
+            return 0
         fi
     done
+
+    # Add it to the top level scope
+    variable::stack::peek "${env}"
+    variable::map::put "${RESULT}" "${nameToken}" "${value_token}"
+    return 1
 }
 
 #
@@ -84,16 +103,19 @@ function environment::setVariable() {
 # Sets a name/variable-token pair on the top level of the environment
 # TODO: MAKE IT WORK
 function environment::lookup() {
+    if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::lookup ${@}" ; fi
+
     declare env="${1}"
     declare name="${2}"
 
-    declare -a scope=($(variable::list::last_p "${env}"))
-    declare size, max_index
-    (( size=${#scope[@]}, max_index=size-1 ))
-    for ((i=0; i<=max_index; i=i+2)); do
-        current_name="${scope[${i}]}"
-        if [ "${scope[${i}]}" == "${name}" ]; then # found it
-            RESULT="${scope[$(${i}+1)]}"
+    variable::value "${env}" ; declare -a scopes=($RESULT)
+    declare -i size
+    declare -i max_index
+    (( size=${#scopes[@]}, max_index=size-1 ))
+    for ((i=0; i<=max_index; i=i+1)); do
+        declare currentScope="${scopes[${i}]}"
+        if variable::map::containsKey_c "${currentScope}" "${name}" ; then
+            variable::map::get "${currentScope}" "${name}"
             return 0
         fi
     done
@@ -107,6 +129,8 @@ function environment::lookup() {
 # or, if the name in question is not found, adds it to the top level
 #
 function environment::replaceVariable() {
+    if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::replaceVariable ${@}" ; fi
+
     declare notImplementedYet=1
 }
 
@@ -116,15 +140,77 @@ if [ $0 != $BASH_SOURCE ]; then
     return
 fi
 
-variable::new list ; env=${RESULT}
-variable::new list ; scope=${RESULT}
-variable::list::push ${env} ${scope}
-variable::new string "the value" ; value=${RESULT}
-variable::list::append $scope "theKey"
-variable::list::append $scope $value
+environment::new ; declare env="${RESULT}"
 
-environment::lookup ${env} "theKey"
-assertEquals 0 $? "return code: found"
-assertEquals "the value" "${RESULT}"
+variable::new string "valueOne"
+environment::setVariable "${env}" "variableOne" "${RESULT}"
 
+# Check that we can get the value out
+environment::lookup "${env}" "variableOne" ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "valueOne" "${RESULT}" "Single variable"
+
+variable::new string "valueTwo"
+environment::setVariable "${env}" "variableTwo" "${RESULT}"
+
+# Check that we can get the previously existing value out
+environment::lookup "${env}" "variableOne" ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "valueOne" "${RESULT}" "Multiple variables, first"
+# And that we can get the new value out
+environment::lookup "${env}" "variableTwo" ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "valueTwo" "${RESULT}" "Multiple variables, second"
+
+#
+# Multiple scope tests
+#
+
+environment::pushScope "${env}"
+
+variable::new string "valueThree"
+environment::setVariable "${env}" "variableThree" "${RESULT}"
+
+# Make sure we can get the new value out
+environment::lookup "${env}" "variableThree" ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "valueThree" "${RESULT}" "Second scope"
+# And a variable from the original scope
+environment::lookup "${env}" "variableTwo" ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "valueTwo" "${RESULT}" "Variable from first scope"
+
+# Pop off the second scope
+environment::popScope "${env}"
+# and make sure a variable from the first scope is still there
+environment::lookup "${env}" "variableTwo" ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "valueTwo" "${RESULT}" "Variable from first scope post pop"
+# and the variable from the second scope is not
+environment::lookup "${env}" "variableThree" ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "valueThree" "${RESULT}" "Second scope"
+
+#
+# Push scope, override a variable, pop it, and make sure the old value is there
+#
+environment::pushScope "${env}"
+
+variable::new string "value override"
+environment::setVariable "${env}" "variableOne" "${RESULT}"
+environment::popScope "${env}"
+
+environment::lookup "${env}" "variableOne" ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "valueOne" "${RESULT}" "Multiple variables, first"
+
+#
+#
+#
+
+assert::report
+
+if [ "$1" == "debug" ]; then 
+    variable::printMetadata
+fi
 

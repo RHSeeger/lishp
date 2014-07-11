@@ -1,7 +1,7 @@
 #!/bin/bash
 
 . common.sh
-. stderrger.sh
+. logger.sh
 
 # TODO: Only set this if it doesn't already exist
 
@@ -429,6 +429,7 @@ function variable::map::containsKey_c() {
             return 0
         fi
     done
+    log "containsKey_c returning 1"
     return 1
 }
 
