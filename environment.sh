@@ -109,11 +109,14 @@ function environment::lookup() {
     declare name="${2}"
 
     variable::value "${env}" ; declare -a scopes=($RESULT)
+
     declare -i size
     declare -i max_index
+    declare currentScope
     (( size=${#scopes[@]}, max_index=size-1 ))
-    for ((i=0; i<=max_index; i=i+1)); do
-        declare currentScope="${scopes[${i}]}"
+    declare -i i
+    for (( i=0; i<=max_index; i=i+1 )); do
+        currentScope="${scopes[${i}]}"
         if variable::map::containsKey_c "${currentScope}" "${name}" ; then
             variable::map::get "${currentScope}" "${name}"
             return 0
@@ -134,6 +137,21 @@ function environment::replaceVariable() {
     declare notImplementedYet=1
 }
 
+function environment::print() {
+    declare env=$1
+
+    variable::value "${env}" ; declare -a scopes=($RESULT)
+    echo "Environment [${env}=${scopes[@]}]"
+
+    declare -i size
+    declare -i max_index
+    (( size=${#scopes[@]}, max_index=size-1 ))
+    declare -i i
+    for (( i=0; i<=max_index; i+=1 )); do
+        declare currentScope="${scopes[${i}]}"
+        variable::map::print "${currentScope}" "    "
+    done
+}
 
 # ======================================================
 if [ $0 != $BASH_SOURCE ]; then
@@ -188,11 +206,10 @@ environment::lookup "${env}" "variableTwo" ; \
     assert::equals "valueTwo" "${RESULT}" "Variable from first scope post pop"
 # and the variable from the second scope is not
 environment::lookup "${env}" "variableThree" ; \
-    variable::value "${RESULT}" ; \
-    assert::equals "valueThree" "${RESULT}" "Second scope"
+    assert::equals 1 $? "Variable from second scope after we popped it"
 
 #
-# Push scope, override a variable, pop it, and make sure the old value is there
+# Push scope, override a variable, pop scope, and make sure the new value is there
 #
 environment::pushScope "${env}"
 
@@ -202,7 +219,7 @@ environment::popScope "${env}"
 
 environment::lookup "${env}" "variableOne" ; \
     variable::value "${RESULT}" ; \
-    assert::equals "valueOne" "${RESULT}" "Multiple variables, first"
+    assert::equals "value override" "${RESULT}" "Multiple variables, first"
 
 #
 #

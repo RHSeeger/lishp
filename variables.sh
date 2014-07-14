@@ -412,24 +412,28 @@ function variable::map::containsKey_c() {
 
     declare mapToken="${1}"
     declare key="${2}"
-    log "Checking value for token [${mapToken}] =? [${VARIABLES_VALUES[${mapToken}]}]"
+#    stderr "Checking value for token [${mapToken}] =? [${VARIABLES_VALUES[${mapToken}]}]"
     variable::value "${mapToken}" ; declare -a items
     if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
-    log "RESULT = [${RESULT}]"
+#    stderr "    RESULT = [${RESULT}]"
 
     declare size 
     declare max_index
     declare currentKey
     (( size=${#items[@]}, max_index=size-1 ))
-    log "Iterating over size=[${size}], max_index=[${max_index}]"
+#    stderr "    Iterating over size=[${size}], max_index=[${max_index}]"
+    declare -i i
     for ((i=0; i<=max_index; i=i+2)); do
-        log "here at i=${i} / items[0]=${items[0]} / items=${items[@]}"
+#        stderr "        here at i=${i} / items[0]=${items[0]} / items=${items[@]}"
+#        echo "        Looking up key at ${i} : [${items[${i}]}]"
         variable::value "${items[${i}]}" ; currentKey="${RESULT}"
-        if [ "${currentKey}" == "${key}" ]; then # found it
+#        echo "        Current Key [${currentKey}]"
+        if [ "${currentKey}" == "${key}" ]; then
+#            echo "            found it"
             return 0
         fi
     done
-    log "containsKey_c returning 1"
+#    stderr "    containsKey_c returning 1"
     return 1
 }
 
@@ -505,7 +509,27 @@ function variable::map::put() {
     return 1
 }
 
+function variable::map::print() {
+    declare mapToken="${1}"
+    declare indent="${2}"
+    
+    variable::value $mapToken ; declare -a items
+    if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
 
+    echo "${indent}MAP [$mapToken=(${items[@]})]"
+
+    declare size
+    declare max_index
+    declare currentKey
+    declare currentValue 
+
+    (( size=${#items[@]}, max_index=size-1 ))
+    for ((i=0; i<=max_index; i=i+2)); do
+        variable::value ${items[${i}]} ; currentKey="${RESULT}"
+        variable::value ${items[((i+1))]} ; currentValue="${RESULT}"
+        echo "${indent}    [${currentKey}]=[${currentValue}]"
+    done
+}
 
 #
 # == Output
