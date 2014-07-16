@@ -82,6 +82,7 @@ function environment::setVariable() {
     variable::value "${env}" ; declare -a scopes=($RESULT)
     declare -i size
     declare -i max_index
+    declare -i i
     (( size=${#scopes[@]}, max_index=size-1 ))
     for ((i=0; i<=max_index; i=i+1)); do
         declare currentScope="${scopes[${i}]}"
