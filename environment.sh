@@ -16,6 +16,7 @@ require variables.arraylist
 require variables.stack
 require variables.queue
 require variables.map
+provide environment
 
 if [ -z "${ENVIRONMENT_DEBUG}" ]; then
     declare -g ENVIRONMENT_DEBUG=0

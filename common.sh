@@ -34,6 +34,8 @@ function require() {
     declare filename="./${1}.sh"
     [ ${REQUIRED[${package}]+abc} ] && return 0
     . "./${filename}"
+    [ ${REQUIRED[${package}]+abc} ] && return 0
+    stderr "Package [${1}] not found"
 }
 function provide() {
     declare package="${1}"

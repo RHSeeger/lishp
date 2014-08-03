@@ -3,6 +3,7 @@
 . common.sh
 require variables
 require environment
+provide evaluator
 
 if [ -z "${EVALUATOR_VARIABLE}" ]; then
     declare -g EVALUATOR_VARIABLE="EVAL_RESULT"
