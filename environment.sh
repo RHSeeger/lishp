@@ -11,10 +11,14 @@
 #
 
 . common.sh
-. variables.sh
+require variables
+require variables.arraylist
+require variables.stack
+require variables.queue
+require variables.map
 
 if [ -z "${ENVIRONMENT_DEBUG}" ]; then
-    declare ENVIRONMENT_DEBUG=0
+    declare -g ENVIRONMENT_DEBUG=0
 fi
 
 #

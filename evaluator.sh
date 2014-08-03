@@ -1,14 +1,14 @@
 #!/bin/bash
 
 . common.sh
-. variables.sh
-. environment.sh
+require variables
+require environment
 
 if [ -z "${EVALUATOR_VARIABLE}" ]; then
-    declare EVALUATOR_VARIABLE="EVAL_RESULT"
+    declare -g EVALUATOR_VARIABLE="EVAL_RESULT"
     variable::new -name "${EVALUATOR_VARIABLE}" nil nil
 
-    declare EVALUATOR_DEBUG=0
+    declare -g EVALUATOR_DEBUG=0
 fi
 
 #
