@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # If this file has already been sourced, just return
-[ ${ENVIRONMENT_SH+true} ] && return
+[ ${ENVIRONMENT_SH+isset} ] && return
 declare -g ENVIRONMENT_SH=true
 
 #
@@ -23,6 +23,9 @@ declare -g ENVIRONMENT_SH=true
 
 
 declare -g ENVIRONMENT_DEBUG=0
+
+# TODO: This needs to use a LinkedList implementation for the base list of scopes
+#       Each scope, on the other hand, should be a Map
 
 #
 # environment::new

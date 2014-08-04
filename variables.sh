@@ -49,7 +49,11 @@ function variable::new() {
         exit 1
     fi
 
-    declare type=$1
+    declare type="${1}"
+    if [ ! ${VARIABLES_TYPES[${type}]+isset} ] ; then
+        stderr "Unknown variable type [${type}]"
+        exit 1
+    fi
 
     if [[ "${#@}" -eq 1 ]]; then
         declare value=""
@@ -99,6 +103,9 @@ function variable::clone() {
     RESULT="$token"
 }
 
+#
+# variable::set <variable token> <type> <value>
+#
 function variable::set() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::set ${@}" ; fi
     if [[ ${#@} -ne 3 ]]; then
@@ -110,11 +117,17 @@ function variable::set() {
     declare type="$2"
     declare value="$3"
     
+    if [ ! ${VARIABLES_TYPES[${type}]+isset} ] ; then
+        stderr "Unknown variable type [${type}]"
+        exit 1
+    fi
+
+
     declare -a metadata=($type)
     VARIABLES_METADATA[${token}]="${metadata[@]}"
     VARIABLES_VALUES[${token}]="$value"
 
-    RESULT=$index
+    RESULT=""
 }
 
 #
@@ -140,13 +153,13 @@ function variable::type::define() {
     declare -a typeParents=()
 
     # declare -g VARIABLES_TYPES=()
-    if [ ${VARIABLES_TYPES[${typeName}]+true} ] ; then
+    if [ ${VARIABLES_TYPES[${typeName}]+isset} ] ; then
         stderr "Variable type [${typeName}] already defined"
         exit 1
     fi
 
     declare -a superTypes
-    if [ ${2+true} ] ; then
+    if [ ${2+isset} ] ; then
         declare typeParent="${2}"
         if [ ! ${VARIABLES_TYPES[$typeParent]+true} ] ; then
             stderr "Variable type [${typeName}] declare unknown parent type [${typeParent}]"
@@ -154,9 +167,10 @@ function variable::type::define() {
         fi
         typeParents+=("${typeParent}")
         typeParents+=(${VARIABLES_TYPES[${typeParent}]})
+        VARIABLES_TYPES[${typeName}]="${typeParents[@]}"
+    else
+        VARIABLES_TYPES[${typeName}]=""
     fi
-
-    VARIABLES_TYPES[${typeName}]="${typeParents[@]}"
 }
 
 #
@@ -174,6 +188,8 @@ function variable::type::instanceOf() {
     declare actualType="${RESULT}"
 
     declare -a actualSuperTypes=(${VARIABLES_TYPES[$actualType]})
+    if [ ${#actualSuperTypes[@]} -lt 1 ] ; then return 1 ; fi
+
     declare superType
     for superType in "${actualSuperTypes[@]}"; do
         if [ "${expectedType}" == "${superType}" ] ; then
@@ -278,6 +294,11 @@ fi
 
 declare testToken
 
+variable::type::define atom
+variable::type::define string atom
+variable::type::define number atom
+variable::type::define integer number
+
 # == ATOM TESTS ==
 variable::new integer 12 ; \
     declare atomId_1=$RESULT
@@ -301,11 +322,6 @@ variable::value $atomId_2 ; \
 variable::value $atomId_1 ; \
     assert::equals 12 "$RESULT" Value of first atom remains
 
-
-variable::type::define atom
-variable::type::define string atom
-variable::type::define number atom
-variable::type::define integer number
 
 # exactlyA
 variable::new integer ; \
@@ -334,7 +350,7 @@ assert::equals 1 $? "number instanceOf string"
 
 assert::report
 
-if [ "$1" == "debug" ]; then 
+if [ ${1+isset} ] && [ "$1" == "debug" ]; then 
     variable::printMetadata
 fi
 

@@ -1,7 +1,7 @@
 
 # http://redsymbol.net/articles/unofficial-bash-strict-mode/
 #set -e          ;# exit if any command has a non-zero exit status
-#set -u          ;# a reference to any variable you haven't previously defined - with the exceptions of $* and $@ - is an error, and causes the program to immediately exit
+set -u          ;# a reference to any variable you haven't previously defined - with the exceptions of $* and $@ - is an error, and causes the program to immediately exit
 #set -o pipefail ;# If any command in a pipeline fails, that return code will be used as the return code of the whole pipeline
 #IFS=$'\n\t'
 

@@ -9,6 +9,7 @@ declare -g VARIABLES_MAP_SH=true
 . variables.sh
 . variables.arraylist.sh
 
+variable::type::define Map ArrayList
 
 #
 # MAP
@@ -17,11 +18,16 @@ declare -g VARIABLES_MAP_SH=true
 #     <key token> <value token> ... <key token> <value token>
 #
 
+function variable::Map::new() {
+    variable::new Map "${@}"
+}
+
+
 #
 # containsKey_c <map token> <key>
 #
-function variable::map::containsKey_c() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::map::containsKey_c ${@}" ; fi
+function variable::Map::containsKey_c() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::Map::containsKey_c ${@}" ; fi
 
     declare mapToken="${1}"
     declare key="${2}"
@@ -53,8 +59,8 @@ function variable::map::containsKey_c() {
 #
 # get <map token> <key>
 #
-function variable::map::get() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::map::get ${@}" ; fi
+function variable::Map::get() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::Map::get ${@}" ; fi
 
     declare mapToken="${1}"
     declare key="${2}"
@@ -76,8 +82,8 @@ function variable::map::get() {
     return 1
 }
 
-function _variable::map::get_p() {
-    if ! variable::map::get "${@}"; then
+function _variable::Map::get_p() {
+    if ! variable::Map::get "${@}"; then
         stderr "Map does not contain the specified key [${2}]"
         exit 1
     fi
@@ -89,7 +95,7 @@ function _variable::map::get_p() {
 #
 # Returns 0 if item was found and replaced, 1 if added
 #
-function variable::map::put() {
+function variable::Map::put() {
     declare mapToken="${1}"
     declare keyToken="${2}"
     declare valueToken="${3}"
@@ -97,7 +103,7 @@ function variable::map::put() {
     variable::value $mapToken ; declare -a items
     if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
     log "MAP: $(_variable::value_p $mapToken)"
-    log "Adding new key/value to items [$keyToken]=[$valueToken] -> ${items[@]}"
+    log "Adding new key/value to items [$keyToken]=[$valueToken] -> ${items[@]:+${items[@]}}"
     variable::value $keyToken   ; declare key="${RESULT}"
     variable::value $valueToken ; declare value="${RESULT}"
 
@@ -109,7 +115,7 @@ function variable::map::put() {
         variable::value ${items[${i}]} ; currentKey="${RESULT}"
         if [ "${currentKey}" == "${key}" ]; then # found it
             items[((${i}+1))]="${valueToken}"
-            variable::set ${mapToken} list "${items[*]}"
+            variable::set ${mapToken} ArrayList "${items[*]}"
             return 0
         fi
     done
@@ -118,11 +124,15 @@ function variable::map::put() {
     items["${#items[@]}"]="${keyToken}"
     items["${#items[@]}"]="${valueToken}"
     log "Added new key/value to items [$keyToken]=[$valueToken] -> ${items[@]}"
-    variable::set ${mapToken} list "${items[*]}"
+    variable::set ${mapToken} ArrayList "${items[*]}"
     return 1
 }
 
-function variable::map::print() {
+#
+# DEBUGGING
+#
+
+function variable::Map::print() {
     declare mapToken="${1}"
     declare indent="${2}"
     
@@ -154,39 +164,39 @@ fi
 #
 # MAP tests
 #
-variable::new list ; vCode=${RESULT}
-variable::new key1 "key one" ; key1=${RESULT}
-variable::new value1 "value one" ; value1=${RESULT}
-variable::new key2 "key two" ; key2=${RESULT}
-variable::new value2 "value two" ; value2=${RESULT}
+variable::Map::new ; vCode=${RESULT}
+variable::new String "key one" ; key1=${RESULT}
+variable::new String "value one" ; value1=${RESULT}
+variable::new String "key two" ; key2=${RESULT}
+variable::new String "value two" ; value2=${RESULT}
 
 # stderr "vCode=[${vCode}] key1=[${key1}] value1=[${value1}] key2=[${key2}] value2=[${value2}] "
 
-variable::map::containsKey_c $vCode "no such key"
+variable::Map::containsKey_c $vCode "no such key"
 assert::equals 1 $? "containsKey false"
 
-variable::map::put $vCode $key1 $value1 # put "key one" "value one"
-variable::map::containsKey_c $vCode "key one"
+variable::Map::put $vCode $key1 $value1 # put "key one" "value one"
+variable::Map::containsKey_c $vCode "key one"
 assert::equals 0 $? "containsKey one true"
-variable::map::get "$vCode" "key one" ; variable::value "${RESULT}" \
+variable::Map::get "$vCode" "key one" ; variable::value "${RESULT}" \
     assert::equals "value one" "$RESULT" "get key one"
 
-variable::map::put $vCode $key2 $value2 # put "key two" "value two"
-variable::map::containsKey_c $vCode "key two"
+variable::Map::put $vCode $key2 $value2 # put "key two" "value two"
+variable::Map::containsKey_c $vCode "key two"
 assert::equals 0 $? "containsKey two true"
-variable::map::get $vCode "key two" ; variable::value "${RESULT}" \
+variable::Map::get $vCode "key two" ; variable::value "${RESULT}" \
     assert::equals "value two" "$RESULT" "get key two"
 
-variable::map::put $vCode $key1 $value2 # put "key one" "value two"
-variable::map::containsKey_c $vCode "key one"
+variable::Map::put $vCode $key1 $value2 # put "key one" "value two"
+variable::Map::containsKey_c $vCode "key one"
 assert::equals 0 $? "containsKey one replaced true"
-variable::map::get $vCode "key one" ; variable::value "${RESULT}" \
+variable::Map::get $vCode "key one" ; variable::value "${RESULT}" \
     assert::equals "value two" "$RESULT" "get key one replaced"
 
 
 assert::report
 
-if [ "$1" == "debug" ]; then 
+if [ ${1+isset} ] && [ "$1" == "debug" ]; then 
     variable::printMetadata
 fi
 

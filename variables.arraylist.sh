@@ -7,20 +7,27 @@ declare -g VARIABLES_ARRAYLIST_SH=true
 . common.sh
 . logger.sh
 . variables.sh
+. variables.atom.sh
+
+variable::type::define ArrayList
 
 # == LIST ==
 # 
 # Lists are represented as just a list of tokens to variables
 #
-function variable::list::append() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::append ${@}" ; fi
+
+function variable::ArrayList::new() {
+    variable::new ArrayList ${@}
+}
+
+function variable::ArrayList::append() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::append ${@}" ; fi
     declare list_token=$1
     declare value_token=$2
 
-    variable::type "${list_token}"
-    if [ "${RESULT}" != "list" ]; then
-        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
-        variable::printMetadata
+    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
+        variable::type "${list_token}"
+        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
         exit 1
     fi
 
@@ -31,33 +38,29 @@ function variable::list::append() {
     RESULT=${#list_value[@]}
 }
 
-function variable::list::prepend() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::prepend ${@}" ; fi
+function variable::ArrayList::prepend() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::prepend ${@}" ; fi
     declare list_token=$1
     declare value_token=$2
 
-    variable::type "${list_token}"
-    if [ "${RESULT}" != "list" ]; then
-        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
-        variable::printMetadata
+    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
+        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
         exit 1
     fi
 
     declare -a list_value=(${VARIABLES_VALUES[$list_token]})
-    declare -a new_value=("${value_token}" "${list_value[@]}")
+    declare -a new_value=("${value_token}" "${list_value[@]:+${list_value[@]}}")
     VARIABLES_VALUES[$list_token]=${new_value[@]}
 
     RESULT=${#list_value[@]}
 }
 
-function variable::list::length() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::length ${@}" ; fi
+function variable::ArrayList::length() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::length ${@}" ; fi
     declare list_token=$1
 
-    variable::type "${list_token}"
-    if [ "${RESULT}" != "list" ]; then
-        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
-        variable::printMetadata
+    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
+        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
         exit 1
     fi
 
@@ -65,49 +68,48 @@ function variable::list::length() {
     RESULT="${#value[@]}"
 }
 
-function variable::list::index() {
+function variable::ArrayList::index() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list::index ${@}" ; fi
     declare list_token=$1
 
-    variable::type "${list_token}"
-    if [ "${RESULT}" != "list" ]; then
-        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
+    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
+        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
         exit 1
     fi
+
     declare index=$2
     variable::value "${list_token}" ; declare -a value=(${RESULT})
     RESULT=${value[$index]}
 }
 
-function _variable::list::index_p() {
-    variable::list::index "${@}"
+function _variable::ArrayList::index_p() {
+    variable::ArrayList::index "${@}"
     echo "$RESULT"
 }
 
-function variable::list::first() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::first ${@}" ; fi
+function variable::ArrayList::first() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::first ${@}" ; fi
     declare list_token=$1
 
-    variable::type "${list_token}"
-    if [ "${RESULT}" != "list" ]; then
-        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
+    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
+        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
         exit 1
     fi
-    variable::list::index ${list_token} 0
+
+    variable::ArrayList::index ${list_token} 0
 }
 
-function _variable::list::first_p() {
-    variable::list::first "${@}"
+function _variable::ArrayList::first_p() {
+    variable::ArrayList::first "${@}"
     echo "${RESULT}"
 }
 
-function variable::list::rest() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::rest ${@}" ; fi
+function variable::ArrayList::rest() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::rest ${@}" ; fi
     declare list_token=$1
 
-    variable::type "${list_token}"
-    if [ "${RESULT}" != "list" ]; then
-        stderr "Cannot append to variable [${list_token}] of type [${$RESULT}]"
+    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
+        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
         exit 1
     fi
 
@@ -115,21 +117,20 @@ function variable::list::rest() {
     RESULT="${values[@]:1}"
 }
 
-function _variable::list::rest_p() {
-    variable::list::rest "${@}"
+function _variable::ArrayList::rest_p() {
+    variable::ArrayList::rest "${@}"
     echo "${RESULT}"
 }
 
 #
 # Returns code 0 if the list is empty, 1 if not
 #
-function variable::list::isEmpty_c() {
-    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::list::isEmpty_c ${@}" ; fi
+function variable::ArrayList::isEmpty_c() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::isEmpty_c ${@}" ; fi
     declare token="${1}"
 
-    variable::type "${token}"
-    if [ "${RESULT}" != "list" ]; then
-        stderr "Cannot append to variable [${token}] of type [${$RESULT}]"
+    if ! variable::type::instanceOf "${token}" ArrayList ; then
+        stderr "Variable [${token}] is not of type ArrayList (actual type [${RESULT}])"
         exit 1
     fi
 
@@ -151,61 +152,58 @@ fi
 # test its size is 1
 # retrieve value of first item (atom) in list
 
-variable::new list           ; vCode=${RESULT}
-variable::new identifier "+" ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 5      ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2      ; variable::list::append ${vCode} ${RESULT}
+variable::ArrayList::new     ; vCode=${RESULT}
+variable::new Identifier "+" ; variable::ArrayList::append ${vCode} ${RESULT}
+variable::new Integer 5      ; variable::ArrayList::append ${vCode} ${RESULT}
+variable::new Integer 2      ; variable::ArrayList::append ${vCode} ${RESULT}
 
 variable::type $vCode ; \
-    assert::equals list "$RESULT" "List type"
-variable::list::index $vCode 0 ; variable::type "${RESULT}" ; \
-    assert::equals identifier "$RESULT" "List first item type"
-variable::list::index $vCode 1 ; variable::type "${RESULT}" ; \
-    assert::equals integer "${RESULT}" "List first item type"
-variable::list::index $vCode 2 ; variable::type "${RESULT}" ; \
-    assert::equals integer "${RESULT}" "List first item type"
+    assert::equals ArrayList "$RESULT" "List type"
+variable::ArrayList::index $vCode 0 ; variable::type "${RESULT}" ; \
+    assert::equals Identifier "$RESULT" "List first item type"
+variable::ArrayList::index $vCode 1 ; variable::type "${RESULT}" ; \
+    assert::equals Integer "${RESULT}" "List first item type"
+variable::ArrayList::index $vCode 2 ; variable::type "${RESULT}" ; \
+    assert::equals Integer "${RESULT}" "List first item type"
 
-variable::new list ; vCode=${RESULT}
-variable::new string "a" ; A=${RESULT} ; variable::list::append ${vCode} $A
-variable::new string "b" ; B=${RESULT} ; variable::list::append ${vCode} $B
-variable::new string "c" ; C=${RESULT} ; variable::list::append ${vCode} $C
+variable::ArrayList::new     ; vCode=${RESULT}
+variable::new String "a" ; A=${RESULT} ; variable::ArrayList::append ${vCode} $A
+variable::new String "b" ; B=${RESULT} ; variable::ArrayList::append ${vCode} $B
+variable::new String "c" ; C=${RESULT} ; variable::ArrayList::append ${vCode} $C
 
-variable::list::index $vCode 1 ; \
+variable::ArrayList::index $vCode 1 ; \
     assert::equals "$B" "$RESULT" "index_p"
-variable::list::first $vCode ; \
+variable::ArrayList::first $vCode ; \
     assert::equals "$A" "$RESULT" "first_p"
-variable::list::rest $vCode 0 ; \
+variable::ArrayList::rest $vCode 0 ; \
     assert::equals "${B} ${C}" "$RESULT" "rest_p"
 
-variable::new -name "EVAL_RESULT" integer 4 ; declare varname="${RESULT}"
+variable::new -name "EVAL_RESULT" Integer 4 ; declare varname="${RESULT}"
 
 assert::equals "EVAL_RESULT" "${varname}" "Non-auto variable name"
 variable::type "${varname}" ; \
-    assert::equals integer "${RESULT}" "Non-auto type"
+    assert::equals Integer "${RESULT}" "Non-auto type"
 variable::value "${varname}" ; \
     assert::equals 4 "${RESULT}" "Non-auto value"
 
-variable::new list ; vCode=${RESULT}
-variable::list::isEmpty_c ${vCode}
+variable::ArrayList::new     ; vCode=${RESULT}
+variable::ArrayList::isEmpty_c ${vCode}
 assert::equals 0 $? "Return code true (0)"
-variable::new identifier "+" ; variable::list::append ${vCode} ${RESULT}
-variable::list::isEmpty_c ${vCode}
+variable::new Identifier "+" ; variable::ArrayList::append ${vCode} ${RESULT}
+variable::ArrayList::isEmpty_c ${vCode}
 assert::equals 1 $? "Return code false (1)"
 
 # append
-variable::new list ; vCode=${RESULT}
-variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
-variable::list::index $vCode 0 ; variable::value "${RESULT}" ; \
+variable::ArrayList::new     ; vCode=${RESULT}
+variable::new Integer 5 ; variable::ArrayList::append ${vCode} ${RESULT}
+variable::new Integer 2 ; variable::ArrayList::append ${vCode} ${RESULT}
+variable::ArrayList::index $vCode 0 ; variable::value "${RESULT}" ; \
     assert::equals 5 "$RESULT" "append / 0"
-variable::list::index $vCode 1 ; variable::value "$RESULT" ; \
+variable::ArrayList::index $vCode 1 ; variable::value "$RESULT" ; \
     assert::equals 2 "$RESULT" "append / 1"
 
 assert::report
 
-if [ "$1" == "debug" ]; then 
+if [ ${1+isset} ] && [ "$1" == "debug" ]; then 
     variable::printMetadata
 fi
-
-
-
