@@ -1,13 +1,14 @@
-TESTABLES=environment.sh evaluator.sh variables.sh
+TESTABLES=\
+	variables.sh \
+	variables.arraylist.sh \
+	variables.linkedlist.sh \
+	variables.map.sh \
+	variables.queue.sh \
+	variables.stack.sh \
+	environment.sh \
+	evaluator.sh
 
-test: environment.test evaluator.test variables.test
+test: $(TESTABLES:.sh=.test)
 
-environment.test:
-	-./environment.sh
-
-evaluator.test:
-	-./evaluator.sh
-
-variables.test:
-	-./variables.sh
-
+%.test : %.sh
+	./$<

@@ -1,16 +1,18 @@
 #!/bin/bash
 
+# If this file has already been sourced, just return
+[ ${EVALUATOR_SH+true} ] && return
+declare -g EVALUATOR_SH=true
+
+
 . common.sh
-require variables
-require environment
-provide evaluator
+. variables.sh
+. environment.sh
 
-if [ -z "${EVALUATOR_VARIABLE}" ]; then
-    declare -g EVALUATOR_VARIABLE="EVAL_RESULT"
-    variable::new -name "${EVALUATOR_VARIABLE}" nil nil
+declare -g EVALUATOR_VARIABLE="EVAL_RESULT"
+variable::new -name "${EVALUATOR_VARIABLE}" nil nil
 
-    declare -g EVALUATOR_DEBUG=0
-fi
+declare -g EVALUATOR_DEBUG=0
 
 #
 # eval <env token> <expr token>

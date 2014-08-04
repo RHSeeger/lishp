@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# If this file has already been sourced, just return
+[ ${ENVIRONMENT_SH+true} ] && return
+declare -g ENVIRONMENT_SH=true
+
 #
 # Environtments are stored as a list of lists
 # Each list is a "call stack", and popped from the list of lists when the current scope is exited
@@ -11,16 +15,14 @@
 #
 
 . common.sh
-require variables
-require variables.arraylist
-require variables.stack
-require variables.queue
-require variables.map
-provide environment
+. variables.sh
+. variables.arraylist.sh
+. variables.stack.sh
+. variables.queue.sh
+. variables.map.sh
 
-if [ -z "${ENVIRONMENT_DEBUG}" ]; then
-    declare -g ENVIRONMENT_DEBUG=0
-fi
+
+declare -g ENVIRONMENT_DEBUG=0
 
 #
 # environment::new

@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# If this file has already been sourced, just return
+[ ${VARIABLES_QUEUE_SH+true} ] && return
+declare -g VARIABLES_QUEUE_SH=true
+
 . common.sh
-require logger
-require variables
-require variables.arraylist
-provide variables.queue
+. logger.sh
+. variables.sh
+. variables.arraylist.sh
 
 
 # == QUEUE ==

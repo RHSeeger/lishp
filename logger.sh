@@ -1,7 +1,11 @@
 #!/bin/bash
 
+
+# If this file has already been sourced, just return
+[ ${LOGGER_SH+true} ] && return
+declare -g LOGGER_SH=true
+
 . common.sh
-provide logger
 
 declare -g LOGGER_FILE="logfile.txt"
 echo > "${LOGGER_FILE}"

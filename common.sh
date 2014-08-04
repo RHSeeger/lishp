@@ -1,11 +1,21 @@
 
+# http://redsymbol.net/articles/unofficial-bash-strict-mode/
+#set -e          ;# exit if any command has a non-zero exit status
+#set -u          ;# a reference to any variable you haven't previously defined - with the exceptions of $* and $@ - is an error, and causes the program to immediately exit
+#set -o pipefail ;# If any command in a pipeline fails, that return code will be used as the return code of the whole pipeline
+#IFS=$'\n\t'
+
+# If this file has already been sourced, just return
+[ ${COMMON_SH+true} ] && return
+declare -g COMMON_SH=true
+
+echo "Defining common commands"
+
 function stderr() {
     echo "${@}" 2>&1
 }
 
-if [ -z "${ASSERT_RESULTS}" ]; then
-    declare -A ASSERT_RESULTS=([total]=0 [passed]=0 [failed]=0)
-fi
+declare -g -A ASSERT_RESULTS=([total]=0 [passed]=0 [failed]=0)
 
 function assert::equals() {
     declare expect=$1
@@ -27,17 +37,3 @@ function assert::report() {
     echo "TESTS [total=${ASSERT_RESULTS[total]}] [passed=${ASSERT_RESULTS[passed]}] [failed=${ASSERT_RESULTS[failed]}]"
 }
 
-
-declare -A REQUIRED=()
-function require() {
-    declare package="${1}"
-    declare filename="./${1}.sh"
-    [ ${REQUIRED[${package}]+abc} ] && return 0
-    . "./${filename}"
-    [ ${REQUIRED[${package}]+abc} ] && return 0
-    stderr "Package [${1}] not found"
-}
-function provide() {
-    declare package="${1}"
-    REQUIRED["${1}"]="./${1}.sh"
-}

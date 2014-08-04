@@ -1,9 +1,14 @@
 #!/bin/bash
 
+# If this file has already been sourced, just return
+[ ${VARIABLES_STACK_SH+true} ] && return
+declare -g VARIABLES_STACK_SH=true
+
 . common.sh
-require logger
-require variables
-provide variables.stack
+. logger.sh
+. variables.sh
+. variables.arraylist.sh
+. variables.queue.sh
 
 # == STACK ==
 # 

@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# If this file has already been sourced, just return
+[ ${VARIABLES_SH+true} ] && return
+declare -g VARIABLES_SH=true
+
 . common.sh
-require logger
-provide variables
+. logger.sh
 
 # TODO: Only set this if it doesn't already exist
 
@@ -17,15 +20,15 @@ provide variables
 #  
 
 # handle=[type]
-if [ -z "${VARIABLES_METADATA}" ]; then
-    declare -g -A VARIABLES_METADATA=()
-    declare -g -A VARIABLES_VALUES=()
-    declare -g VARIABLES_INDEX=0
+declare -g -A VARIABLES_METADATA=()
+declare -g -A VARIABLES_VALUES=()
+declare -g VARIABLES_INDEX=0
 
-    declare -g -A VARIABLES_OFFSETS=([type]=0)
+declare -g -A VARIABLES_OFFSETS=([type]=0)
 
-    declare -g VARIABLES_DEBUG=0
-fi
+declare -g VARIABLES_DEBUG=0
+
+declare -g VARIABLES_TYPES=()
 
 # == GENERAL ==
 function variable::new() {
@@ -114,6 +117,9 @@ function variable::set() {
     RESULT=$index
 }
 
+#
+# TYPES
+#
 function variable::type() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::type ${@}" ; fi
     declare index=$1
@@ -128,6 +134,15 @@ function _variable::type_p() {
     variable::type "${@}"
     echo "$RESULT"
 }
+
+function variable::type::define() {
+    declare typeName="${1}"
+    declare typeParent="${2}"
+
+    
+}
+
+
 
 function variable::value() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::value ${@}" ; fi
