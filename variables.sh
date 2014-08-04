@@ -28,7 +28,7 @@ declare -g -A VARIABLES_OFFSETS=([type]=0)
 
 declare -g VARIABLES_DEBUG=0
 
-declare -g VARIABLES_TYPES=()
+declare -g -A VARIABLES_TYPES=()
 
 # == GENERAL ==
 function variable::new() {
@@ -137,11 +137,74 @@ function _variable::type_p() {
 
 function variable::type::define() {
     declare typeName="${1}"
-    declare typeParent="${2}"
+    declare -a typeParents=()
 
-    
+    # declare -g VARIABLES_TYPES=()
+    if [ ${VARIABLES_TYPES[${typeName}]+true} ] ; then
+        stderr "Variable type [${typeName}] already defined"
+        exit 1
+    fi
+
+    declare -a superTypes
+    if [ ${2+true} ] ; then
+        declare typeParent="${2}"
+        if [ ! ${VARIABLES_TYPES[$typeParent]+true} ] ; then
+            stderr "Variable type [${typeName}] declare unknown parent type [${typeParent}]"
+            exit 1
+        fi
+        typeParents+=("${typeParent}")
+        typeParents+=(${VARIABLES_TYPES[${typeParent}]})
+    fi
+
+    VARIABLES_TYPES[${typeName}]="${typeParents[@]}"
 }
 
+#
+# Returns true (0) if the variable is of the specified type or any of its supertypes
+#
+function variable::type::instanceOf() {
+    declare token="${1}"
+    declare expectedType="${2}"
+
+    if variable::type::exactlyA "${token}" "${expectedType}" ; then
+        return 0
+    fi
+
+    variable::type "${token}"
+    declare actualType="${RESULT}"
+
+    declare -a actualSuperTypes=(${VARIABLES_TYPES[$actualType]})
+    declare superType
+    for superType in "${actualSuperTypes[@]}"; do
+        if [ "${expectedType}" == "${superType}" ] ; then
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+#
+# Returns true (0) if the variable is of the specified type
+#
+function variable::type::exactlyA() {
+    declare token="${1}"
+    declare expectedType="${2}"
+
+    if [ ! ${VARIABLES_TYPES[$expectedType]+true} ] ; then
+        stderr "Unknown type [${expectedType}]"
+        exit 1
+    fi
+
+    variable::type "${token}"
+    declare actualType="${RESULT}"
+
+    if [ "${actualType}" == "${expectedType}" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 
 function variable::value() {
@@ -213,6 +276,7 @@ if [ $0 != $BASH_SOURCE ]; then
     return
 fi
 
+declare testToken
 
 # == ATOM TESTS ==
 variable::new integer 12 ; \
@@ -236,6 +300,36 @@ variable::value $atomId_2 ; \
     assert::equals "hello there" "$RESULT" Value of second atom
 variable::value $atomId_1 ; \
     assert::equals 12 "$RESULT" Value of first atom remains
+
+
+variable::type::define atom
+variable::type::define string atom
+variable::type::define number atom
+variable::type::define integer number
+
+# exactlyA
+variable::new integer ; \
+    testToken="${RESULT}"
+variable::type $testToken
+variable::type::exactlyA "${testToken}" integer
+assert::equals 0 $? "exactlyA same"
+variable::type::exactlyA "${testToken}" number
+assert::equals 1 $? "exactlyA super"
+variable::type::exactlyA "${testToken}" string
+assert::equals 1 $? "exactlyA other"
+
+# instanceOf
+variable::new number ; \
+    testToken="${RESULT}"
+variable::type $testToken
+variable::type::instanceOf "${testToken}" integer
+assert::equals 1 $? "number instanceOf integer"
+variable::type::instanceOf "${testToken}" number
+assert::equals 0 $? "number instanceOf number"
+variable::type::instanceOf "${testToken}" atom
+assert::equals 0 $? "number instanceOf atom"
+variable::type::instanceOf "${testToken}" string
+assert::equals 1 $? "number instanceOf string"
 
 
 assert::report
