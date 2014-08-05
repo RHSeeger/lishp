@@ -17,7 +17,7 @@ variable::type::define ArrayList
 #
 
 function variable::ArrayList::new() {
-    variable::new ArrayList ${@}
+    variable::new ArrayList "${@}"
 }
 
 function variable::ArrayList::append() {
@@ -25,11 +25,7 @@ function variable::ArrayList::append() {
     declare list_token=$1
     declare value_token=$2
 
-    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
-        variable::type "${list_token}"
-        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
-        exit 1
-    fi
+    variable::type::instanceOfOrExit "${list_token}" ArrayList
 
     declare -a list_value=(${VARIABLES_VALUES[$list_token]})
     list_value+=(${value_token})
@@ -43,10 +39,7 @@ function variable::ArrayList::prepend() {
     declare list_token=$1
     declare value_token=$2
 
-    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
-        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
-        exit 1
-    fi
+    variable::type::instanceOfOrExit "${list_token}" ArrayList
 
     declare -a list_value=(${VARIABLES_VALUES[$list_token]})
     declare -a new_value=("${value_token}" "${list_value[@]:+${list_value[@]}}")
@@ -59,10 +52,7 @@ function variable::ArrayList::length() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::length ${@}" ; fi
     declare list_token=$1
 
-    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
-        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
-        exit 1
-    fi
+    variable::type::instanceOfOrExit "${list_token}" ArrayList
 
     variable::value "${list_token}" ; declare -a value=("${RESULT}")
     RESULT="${#value[@]}"
@@ -72,10 +62,7 @@ function variable::ArrayList::index() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variables_list::index ${@}" ; fi
     declare list_token=$1
 
-    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
-        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
-        exit 1
-    fi
+    variable::type::instanceOfOrExit "${list_token}" ArrayList
 
     declare index=$2
     variable::value "${list_token}" ; declare -a value=(${RESULT})
@@ -91,10 +78,7 @@ function variable::ArrayList::first() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::first ${@}" ; fi
     declare list_token=$1
 
-    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
-        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
-        exit 1
-    fi
+    variable::type::instanceOfOrExit "${list_token}" ArrayList
 
     variable::ArrayList::index ${list_token} 0
 }
@@ -108,10 +92,7 @@ function variable::ArrayList::rest() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::rest ${@}" ; fi
     declare list_token=$1
 
-    if ! variable::type::instanceOf "${list_token}" ArrayList ; then
-        stderr "Variable [${list_token}] is not of type ArrayList (actual type [${RESULT}])"
-        exit 1
-    fi
+    variable::type::instanceOfOrExit "${list_token}" ArrayList
 
     variable::value "${list_token}" ; declare -a values=($RESULT)
     RESULT="${values[@]:1}"
@@ -129,10 +110,7 @@ function variable::ArrayList::isEmpty_c() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::ArrayList::isEmpty_c ${@}" ; fi
     declare token="${1}"
 
-    if ! variable::type::instanceOf "${token}" ArrayList ; then
-        stderr "Variable [${token}] is not of type ArrayList (actual type [${RESULT}])"
-        exit 1
-    fi
+    variable::type::instanceOfOrExit "${token}" ArrayList
 
     variable::value "${token}" ; declare -a value=(${RESULT})
     [[ ${#value[@]} -eq 0 ]]

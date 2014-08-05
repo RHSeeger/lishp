@@ -200,6 +200,16 @@ function variable::type::instanceOf() {
     return 1
 }
 
+function variable::type::instanceOfOrExit() {
+    declare valueToken="${1}"
+    declare expectedType="${2}"
+    if ! variable::type::instanceOf "${valueToken}" "${expectedType}" ; then
+        variable::type "${valueToken}"
+        stderr "Variable [${valueToken}] is not of type [${expectedType}] (actual type [${RESULT}])"
+        exit 1
+    fi
+}
+
 #
 # Returns true (0) if the variable is of the specified type
 #
