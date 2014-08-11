@@ -1,5 +1,6 @@
 TESTABLES=\
 	variables.sh \
+	variables.atom.sh \
 	variables.arraylist.sh \
 	variables.linkedlist.sh \
 	variables.map.sh \
@@ -11,4 +12,5 @@ TESTABLES=\
 test: $(TESTABLES:.sh=.test)
 
 %.test : %.sh
-	./$<
+	@echo == $< ==
+	@./$<

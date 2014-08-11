@@ -13,7 +13,19 @@ variable::type::define LinkedList
 
 # == LIST ==
 # 
-# Lists are represented as just a list of tokens to variables
+# LinkedLists are represented as cons pairs, lists of 2 elements
+# The end of the list is represented by a Nil object
+# (item_1 child_1) 
+#    |      |
+#    value token -> 42
+#          (item_2 child_2)
+#           |      |
+#           value token -> 53
+#                  |
+#                  Nil
+# Or, for an empty list, just the nil object (an empty string)
+#
+# There should never be a case where a LinkedList single node is a list of 1 item
 #
 
 #
@@ -28,6 +40,7 @@ function variable::LinkedList::new() {
 #
 # Appends a value (by token) to the end of a LinkedList
 # Returns nothing
+# Does change the value of the list pointed to by the token passed in
 #
 function variable::LinkedList::append() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::LinkedList::append ${@}" ; fi
@@ -36,37 +49,36 @@ function variable::LinkedList::append() {
 
     variable::type::instanceOfOrExit "${list_token}" LinkedList
 
-    declare currentListToken="${list_token}"
-    variable::value "${currentListToken}"
-    declare -a node=(${RESULT})
-    while [ "${#node[@]}" -eq 2 ]; do
-        currentListToken="${node[1]}"
-        variable::value "${currentListToken}"
-        node=(${RESULT})
-    done
-    
-    case "${#node[@]}" in
-        0)
-            variable::set "${currentListToken}" LinkedList "${value_token}"
-            ;;
-        1)
-            declare -a newNode=("${value_token}")
-            variable::LinkedList::new "${newNode[@]}"
-            node+=("${RESULT}")
-            variable::set "${currentListToken}" LinkedList "${node[*]}"
-            ;;
-        *)
-            stderr "Unexpected list node length of ${#node[@]}"
+    declare currToken="${list_token}"
+    declare node
+    declare -a nodeArr
+
+    while true; do
+        variable::value "${currToken}"
+        node="${RESULT}"
+        if [ "${node}" == "" ]; then # at the last node, modify here
+            variable::LinkedList::new
+            nodeArr=("${value_token}" "${RESULT}")
+            variable::set "${currToken}" LinkedList "${nodeArr[*]}"
+            RESULT=""
+            return 0
+        fi
+        nodeArr=($node)
+        if [ "${#nodeArr[@]}" -ne 2 ]; then
+            stderr "Encountered node with single element at [${currToken}]=[${nodeArr[@]}]"
             exit 1
-            ;;
-    esac
-    
-    RESULT=""
+        fi
+        currToken="${nodeArr[1]}"
+    done
+
+    stderr "Should never get here"
+    exit 1
 }
 
 #
 # Prepends a value (by token) to the beginning of a LinkedList
 # Returns the token for the new beginning of the LinkedList
+# Should never change the value of the list pointed to by the token passed in
 #
 function variable::LinkedList::prepend() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::LinkedList::prepend ${@}" ; fi
@@ -78,14 +90,9 @@ function variable::LinkedList::prepend() {
     variable::value "${list_token}"
     declare -a node=(${RESULT})
 
-    if [ "${#node[@]}" -eq 0 ]; then
-        variable::set "${list_token}" LinkedList "${value_token}"
-        RESULT="${list_token}"
-    else
-        declare -a node=("${value_token}" "${list_token}")
-        variable::LinkedList::new "${node[*]}"
-        RESULT="${RESULT}"
-    fi
+    declare -a node=("${value_token}" "${list_token}")
+    variable::LinkedList::new "${node[*]}"
+    RESULT="${RESULT}"
 }
 
 function variable::LinkedList::length() {
@@ -94,31 +101,29 @@ function variable::LinkedList::length() {
 
     variable::type::instanceOfOrExit "${list_token}" LinkedList
 
-    declare currentListToken="${list_token}"
-    variable::value "${currentListToken}"
-    declare -a node=(${RESULT})
-    
-    # empty list
-    if [ "${#node[@]}" -eq 0 ]; then
-        RESULT=0
-        return
-    fi
-
+    declare currToken="${list_token}"
+    declare node
+    declare -a nodeArr
     declare -i count=0
-    while [ "${#node[@]}" -eq 2 ]; do
-        currentListToken="${node[1]}"
-        variable::value "${currentListToken}"
-        node=(${RESULT})
-        count+=1
-    done
-    
-    if [ "${#node[@]}" -eq 0 ]; then
-        stderr "Encountered empty list at end of linked list"
-        exit 1
-    fi
 
-    count+=1
-    RESULT=$count
+    while true; do
+        variable::value "${currToken}"
+        node="${RESULT}"
+        if [ "${node}" == "" ]; then 
+            RESULT=${count}
+            return 0
+        fi
+        nodeArr=($node)
+        if [ "${#nodeArr[@]}" -ne 2 ]; then
+            stderr "Encountered node with single element at [${currToken}]=[${nodeArr[@]}]"
+            exit 1
+        fi
+        count+=1
+        currToken="${nodeArr[1]}"
+    done
+
+    stderr "Should never get here"
+    exit 1
 }
 
 function variable::LinkedList::index() {
@@ -128,66 +133,62 @@ function variable::LinkedList::index() {
 
     variable::type::instanceOfOrExit "${token}" LinkedList
 
-    variable::value "${token}"
-    if [ -z "${RESULT}" ]; then
-        stderr "Invalid index [${index}]: empty list"
-        exit 1
-    fi
+    declare currToken="${token}"
+    declare node
+    declare -a nodeArr
+    declare -i count=0
 
-    declare -i i
-    declare -a node
-    for ((i=0; i<index; i=i+1)); do
-        variable::value "${token}"
-        if [ -z "${RESULT}" ];then
-            stderr "Found empty list at end of LinkedList"
+    while true; do
+        variable::value "${currToken}"
+        node="${RESULT}"
+        if [ "${node}" == "" ]; then 
+            stderr "Invalid index [${index}] for list of length [${count}]"
             exit 1
         fi
-        node=(${RESULT})
-        if [ "${#node[@]}" -eq 1 ]; then
-            stderr "Index out of bounds"
+        nodeArr=($node)
+        if [ "${#nodeArr[@]}" -ne 2 ]; then
+            stderr "Encountered node with single element at [${currToken}]=[${nodeArr[@]}]"
             exit 1
         fi
-        token="${node[1]}"
+        if [ $count -eq $index ]; then # this is the node we're looking for
+            RESULT="${nodeArr[0]}"
+            return 0
+        fi
+
+        count+=1
+        currToken="${nodeArr[1]}"
     done
 
-    variable::value "${token}"
-    if [ -z "${RESULT}" ];then
-        stderr "Found empty list at end of LinkedList"
-        exit 1
-    fi
-    node=(${RESULT})
-    RESULT="${node[0]}"
+    stderr "Should never get here"
+    exit 1
 }
 
 # TODO: Commands past here are not implemented
 
 function variable::LinkedList::first() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::LinkedList::first ${@}" ; fi
-    declare list_token=$1
+    declare token=$1
 
-    variable::type::instanceOfOrExit "${list_token}" LinkedList
+    variable::type::instanceOfOrExit "${token}" LinkedList
 
-    variable::LinkedList::index ${list_token} 0
-}
-
-function _variable::LinkedList::first_p() {
-    variable::LinkedList::first "${@}"
-    echo "${RESULT}"
+    variable::LinkedList::index ${token} 0
 }
 
 function variable::LinkedList::rest() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::LinkedList::rest ${@}" ; fi
-    declare list_token=$1
+    declare token=$1
 
-    variable::type::instanceOfOrExit "${list_token}" LinkedList
+    variable::type::instanceOfOrExit "${token}" LinkedList
 
-    variable::value "${list_token}" ; declare -a values=($RESULT)
-    RESULT="${values[@]:1}"
-}
+    variable::value "${token}"
+    declare node="${RESULT}"
+    if [ "${node}" == "" ]; then
+        stderr "Called [rest] on empty list"
+        exit 1
+    fi
 
-function _variable::LinkedList::rest_p() {
-    variable::LinkedList::rest "${@}"
-    echo "${RESULT}"
+    declare -a nodeArr=($RESULT)
+    RESULT="${nodeArr[1]}"
 }
 
 #
@@ -197,11 +198,15 @@ function variable::LinkedList::isEmpty_c() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::LinkedList::isEmpty_c ${@}" ; fi
     declare token="${1}"
 
-    variable::type::instanceOfOrExit "${list_token}" LinkedList
+    variable::type::instanceOfOrExit "${token}" LinkedList
 
-    variable::value "${token}" ; declare -a value=(${RESULT})
-    [[ ${#value[@]} -eq 0 ]]
-    return $?
+    variable::value "${token}"
+    declare node="${RESULT}"
+    if [ "${node}" == "" ]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 
@@ -217,108 +222,78 @@ fi
 # test its size is 1
 # retrieve value of first item (atom) in list
 
+variable::new String "A" ; var_A="${RESULT}"
+variable::new String "B" ; var_B="${RESULT}"
+variable::new String "C" ; var_C="${RESULT}"
+variable::new String "D" ; var_D="${RESULT}"
+
+## LENGTH
 # length
 variable::LinkedList::new     ; vCode=${RESULT}
 variable::LinkedList::length $vCode ; \
     assert::equals 0 "${RESULT}" "length empty list"
 
-# prepend + length
-variable::new String "A" ; \
-    variable::LinkedList::prepend ${vCode} ${RESULT} ; \
-    vCode="${RESULT}"
-variable::LinkedList::length $vCode ; \
-    assert::equals 1 "${RESULT}" "prepend length 1"
+variable::LinkedList::prepend ${vCode} ${var_A} ; vCode_1="${RESULT}"
+variable::LinkedList::length ${vCode_1} ; \
+    assert::equals 1 "${RESULT}" "length after adding 1"
+variable::LinkedList::length ${vCode} ; \
+    assert::equals 0 "${RESULT}" "length after adding 1 - original list"
 
-variable::new String "B" ; \
-    variable::LinkedList::prepend ${vCode} ${RESULT} ; \
-    vCode="${RESULT}"
+variable::LinkedList::prepend ${vCode_1} ${var_B} ; vCode_2="${RESULT}"
+variable::LinkedList::length ${vCode_2} ; \
+    assert::equals 2 "${RESULT}" "length after adding 2"
+variable::LinkedList::length ${vCode_1} ; \
+    assert::equals 1 "${RESULT}" "length after adding 2 - middle list"
+variable::LinkedList::length ${vCode} ; \
+    assert::equals 0 "${RESULT}" "length after adding 1 - original list"
+
+
+# prepend
+variable::LinkedList::new     ; vCode=${RESULT}
+variable::LinkedList::prepend ${vCode} ${var_A} ; vCode="${RESULT}"
+variable::LinkedList::prepend ${vCode} ${var_B} ; vCode="${RESULT}"
 variable::LinkedList::length $vCode ; \
     assert::equals 2 "${RESULT}" "prepend length 2"
+variable::LinkedList::index $vCode 0 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "B" "${RESULT}" "first item of prepend list"
+variable::LinkedList::index $vCode 1 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "A" "${RESULT}" "second item of prepend list"
 
-# prepend + index
-variable::LinkedList::index $vCode 0
-variable::value ${RESULT}
-assert::equals "B" ${RESULT} "prepend index 0"
-
-variable::LinkedList::index $vCode 1
-variable::value ${RESULT}
-assert::equals "A" ${RESULT} "prepend index 1"
-
-# append + length
+# append
 variable::LinkedList::new     ; vCode=${RESULT}
-variable::LinkedList::length $vCode ; \
-    assert::equals 0 "${RESULT}" "length empty list"
-
-variable::new String "A" ; \
-    variable::LinkedList::append ${vCode} ${RESULT}
-variable::LinkedList::length $vCode ; \
-    assert::equals 1 "${RESULT}" "append length 1"
-
-variable::new String "B" ; \
-    variable::LinkedList::append ${vCode} ${RESULT}
+variable::LinkedList::append ${vCode} ${var_A}
+variable::LinkedList::append ${vCode} ${var_B}
 variable::LinkedList::length $vCode ; \
     assert::equals 2 "${RESULT}" "append length 2"
-
-# append + index
-variable::LinkedList::index $vCode 0
-variable::value ${RESULT}
-assert::equals "A" ${RESULT} "append index 0"
-
-variable::LinkedList::index $vCode 1
-variable::value ${RESULT}
-assert::equals "B" ${RESULT} "append index 1"
+variable::LinkedList::index $vCode 0 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "A" "${RESULT}" "first item of append list"
+variable::LinkedList::index $vCode 1 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "B" "${RESULT}" "second item of append list"
 
 # index empty list
 variable::LinkedList::new     ; vCode=${RESULT}
 ignore=$(variable::LinkedList::index $vCode 0)
 assert::equals 1 $? "exit code length of empty list"
 
-# TODO: finish the rest of this
-
+# Type name
+variable::LinkedList::new     ; vCode=${RESULT}
 variable::type $vCode ; \
     assert::equals LinkedList "$RESULT" "List type"
-variable::LinkedList::index $vCode 0 ; variable::type "${RESULT}" ; \
-    assert::equals Identifier "$RESULT" "List first item type"
-variable::LinkedList::index $vCode 1 ; variable::type "${RESULT}" ; \
-    assert::equals Integer "${RESULT}" "List first item type"
-variable::LinkedList::index $vCode 2 ; variable::type "${RESULT}" ; \
-    assert::equals Integer "${RESULT}" "List first item type"
+variable::type::instanceOf $vCode LinkedList ; \
+    assert::equals 0 $? "instanceOf"
 
-variable::LinkedList::new     ; vCode=${RESULT}
-variable::new String "a" ; A=${RESULT} ; variable::LinkedList::append ${vCode} $A
-variable::new String "b" ; B=${RESULT} ; variable::LinkedList::append ${vCode} $B
-variable::new String "c" ; C=${RESULT} ; variable::LinkedList::append ${vCode} $C
-
-variable::LinkedList::index $vCode 1 ; \
-    assert::equals "$B" "$RESULT" "index_p"
-variable::LinkedList::first $vCode ; \
-    assert::equals "$A" "$RESULT" "first_p"
-variable::LinkedList::rest $vCode 0 ; \
-    assert::equals "${B} ${C}" "$RESULT" "rest_p"
-
-variable::new -name "EVAL_RESULT" Integer 4 ; declare varname="${RESULT}"
-
-assert::equals "EVAL_RESULT" "${varname}" "Non-auto variable name"
-variable::type "${varname}" ; \
-    assert::equals Integer "${RESULT}" "Non-auto type"
-variable::value "${varname}" ; \
-    assert::equals 4 "${RESULT}" "Non-auto value"
-
+# isEmpty_c
 variable::LinkedList::new     ; vCode=${RESULT}
 variable::LinkedList::isEmpty_c ${vCode}
 assert::equals 0 $? "Return code true (0)"
-variable::new Identifier "+" ; variable::LinkedList::append ${vCode} ${RESULT}
+
+variable::LinkedList::append ${vCode} ${var_A}
 variable::LinkedList::isEmpty_c ${vCode}
 assert::equals 1 $? "Return code false (1)"
-
-# append
-variable::LinkedList::new     ; vCode=${RESULT}
-variable::new Integer 5 ; variable::LinkedList::append ${vCode} ${RESULT}
-variable::new Integer 2 ; variable::LinkedList::append ${vCode} ${RESULT}
-variable::LinkedList::index $vCode 0 ; variable::value "${RESULT}" ; \
-    assert::equals 5 "$RESULT" "append / 0"
-variable::LinkedList::index $vCode 1 ; variable::value "$RESULT" ; \
-    assert::equals 2 "$RESULT" "append / 1"
 
 assert::report
 
