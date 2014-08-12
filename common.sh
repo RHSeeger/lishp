@@ -9,7 +9,7 @@ set -u          ;# a reference to any variable you haven't previously defined - 
 [ ${COMMON_SH+true} ] && return
 declare -g COMMON_SH=true
 
-echo "Defining common commands"
+# echo "Defining common commands"
 
 function stderr() {
     echo "${@}" 2>&1

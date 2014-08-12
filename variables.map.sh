@@ -24,46 +24,44 @@ function variable::Map::new() {
 
 
 #
-# containsKey_c <map token> <key>
+# containsKey_c <map token> <key token>
 #
 function variable::Map::containsKey_c() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::Map::containsKey_c ${@}" ; fi
 
     declare mapToken="${1}"
-    declare key="${2}"
-#    stderr "Checking value for token [${mapToken}] =? [${VARIABLES_VALUES[${mapToken}]}]"
+    declare keyToken="${2}"
+
     variable::value "${mapToken}" ; declare -a items
     if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
-#    stderr "    RESULT = [${RESULT}]"
+
+    variable::value "${keyToken}" ; declare key="${RESULT}"
 
     declare size 
     declare max_index
     declare currentKey
     (( size=${#items[@]}, max_index=size-1 ))
-#    stderr "    Iterating over size=[${size}], max_index=[${max_index}]"
     declare -i i
     for ((i=0; i<=max_index; i=i+2)); do
-#        stderr "        here at i=${i} / items[0]=${items[0]} / items=${items[@]}"
-#        echo "        Looking up key at ${i} : [${items[${i}]}]"
         variable::value "${items[${i}]}" ; currentKey="${RESULT}"
-#        echo "        Current Key [${currentKey}]"
         if [ "${currentKey}" == "${key}" ]; then
-#            echo "            found it"
             return 0
         fi
     done
-#    stderr "    containsKey_c returning 1"
+
     return 1
 }
 
 #
-# get <map token> <key>
+# get <map token> <key token>
 #
 function variable::Map::get() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::Map::get ${@}" ; fi
 
     declare mapToken="${1}"
-    declare key="${2}"
+    declare keyToken="${2}"
+    variable::value "${keyToken}" ; declare key="${RESULT}"
+
     declare -a items
     variable::value $mapToken
     if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
@@ -96,6 +94,8 @@ function _variable::Map::get_p() {
 # Returns 0 if item was found and replaced, 1 if added
 #
 function variable::Map::put() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::Map::put ${@}" ; fi
+
     declare mapToken="${1}"
     declare keyToken="${2}"
     declare valueToken="${3}"
@@ -134,7 +134,7 @@ function variable::Map::put() {
 
 function variable::Map::print() {
     declare mapToken="${1}"
-    declare indent="${2}"
+    declare indent="${2-}"
     
     variable::value $mapToken ; declare -a items
     if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
@@ -169,28 +169,29 @@ variable::new String "key one" ; key1=${RESULT}
 variable::new String "value one" ; value1=${RESULT}
 variable::new String "key two" ; key2=${RESULT}
 variable::new String "value two" ; value2=${RESULT}
+variable::new String "no such key" ; keyUnknown=${RESULT}
 
 # stderr "vCode=[${vCode}] key1=[${key1}] value1=[${value1}] key2=[${key2}] value2=[${value2}] "
 
-variable::Map::containsKey_c $vCode "no such key"
+variable::Map::containsKey_c $vCode $keyUnknown
 assert::equals 1 $? "containsKey false"
 
 variable::Map::put $vCode $key1 $value1 # put "key one" "value one"
-variable::Map::containsKey_c $vCode "key one"
+variable::Map::containsKey_c $vCode $key1
 assert::equals 0 $? "containsKey one true"
-variable::Map::get "$vCode" "key one" ; variable::value "${RESULT}" \
+variable::Map::get "$vCode" $key1 ; variable::value "${RESULT}" \
     assert::equals "value one" "$RESULT" "get key one"
 
 variable::Map::put $vCode $key2 $value2 # put "key two" "value two"
-variable::Map::containsKey_c $vCode "key two"
+variable::Map::containsKey_c $vCode $key2
 assert::equals 0 $? "containsKey two true"
-variable::Map::get $vCode "key two" ; variable::value "${RESULT}" \
+variable::Map::get $vCode $key2 ; variable::value "${RESULT}" \
     assert::equals "value two" "$RESULT" "get key two"
 
 variable::Map::put $vCode $key1 $value2 # put "key one" "value two"
-variable::Map::containsKey_c $vCode "key one"
+variable::Map::containsKey_c $vCode $key1
 assert::equals 0 $? "containsKey one replaced true"
-variable::Map::get $vCode "key one" ; variable::value "${RESULT}" \
+variable::Map::get $vCode $key1 ; variable::value "${RESULT}" \
     assert::equals "value two" "$RESULT" "get key one replaced"
 
 
