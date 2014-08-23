@@ -153,20 +153,20 @@ function environment::setVariable() {
     if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::setVariable ${@}" ; fi
 
     declare env="${1}"
-    declare name="${2}"
-    declare value_token="${3}"
+    declare keyToken="${2}"
+    declare valueToken="${3}"
 
     variable::LinkedList::first "${env}"
     declare scope="${RESULT}"
     declare returnValue
 
-    if variable::Map::containsKey_c "${scope}" "${name}" ; then
+    if variable::Map::containsKey_c "${scope}" "${keyToken}" ; then
         returnValue=0
     else
         returnValue=1
     fi
 
-    variable::Map::put "${scope}" "${name}" "${value_token}"
+    variable::Map::put "${scope}" "${keyToken}" "${valueToken}"
     RESULT=""
     return $returnValue
 }
@@ -182,18 +182,16 @@ function environment::setOrReplaceVariable() {
     if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::setOrReplaceVariable ${@}" ; fi
 
     declare env="${1}"
-    declare name="${2}"
+    declare keyToken="${2}"
     declare valueToken="${3}"
     declare scope
-
-    variable::new String "${name}" ; declare keyToken="${RESULT}"
 
     declare currentEnv="${env}"
     while ! variable::LinkedList::isEmpty_c "${currentEnv}" ; do
         variable::LinkedList::first "${currentEnv}"
         scope="${RESULT}"
-        if variable::Map::containsKey_c "${scope}" "${name}" ; then
-            variable::Map::put "${scope}" "${name}" "${valueToken}"
+        if variable::Map::containsKey_c "${scope}" "${keyToken}" ; then
+            variable::Map::put "${scope}" "${keyToken}" "${valueToken}"
             RESULT=""
             return 0
         fi
@@ -287,7 +285,7 @@ environment::hasValue "${env3}" $key2 ; \
     assert::equals 1 $? "Variable from second scope after we popped it"
 
 #
-# Multiple scope tests / set
+# Multiple scope tests / setOrReplace
 #
 environment::new ; env1="${RESULT}"
 environment::setOrReplaceVariable "${env1}" $key1 $value1
@@ -323,15 +321,12 @@ environment::setVariable $env1 $key1 $value1
 environment::pushScope "${env1}" ; env2="$RESULT"
 environment::setVariable "${env2}" $key1 $value2
 
-environment::getValue "${env2}" $key1 ; \
-    variable::value "${RESULT}" ; \
-    assert::equals "value two" "${RESULT}" "Reset variable value, pre pop, old env"
-environment::getValue "${env2}" $key1 ; \
-    variable::value "${RESULT}" ; \
-    assert::equals "value two" "${RESULT}" "Reset variable value, pre pop, new env"
 environment::getValue "${env1}" $key1 ; \
     variable::value "${RESULT}" ; \
-    assert::equals "value two" "${RESULT}" "Reset variable value, post pop, old env"
+    assert::equals "value one" "${RESULT}" "setVariable, original env"
+environment::getValue "${env2}" $key1 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "value two" "${RESULT}" "setVariable, new env"
 
 #
 #
