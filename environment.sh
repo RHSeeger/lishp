@@ -178,12 +178,12 @@ function environment::setVariable() {
 # Sets a name/variable-token pair whereever it is found in the environment list
 # or, if the name in question is not found, adds it to the top level
 #
-function environment::replaceVariable() {
-    if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::replaceVariable ${@}" ; fi
+function environment::setOrReplaceVariable() {
+    if [[ ${ENVIRONMENT_DEBUG} == 1 ]]; then stderr "environment::setOrReplaceVariable ${@}" ; fi
 
     declare env="${1}"
     declare name="${2}"
-    declare value_token="${3}"
+    declare valueToken="${3}"
     declare scope
 
     variable::new String "${name}" ; declare keyToken="${RESULT}"
@@ -193,7 +193,7 @@ function environment::replaceVariable() {
         variable::LinkedList::first "${currentEnv}"
         scope="${RESULT}"
         if variable::Map::containsKey_c "${scope}" "${name}" ; then
-            variable::Map::put "${scope}" "${name}" "${value_token}"
+            variable::Map::put "${scope}" "${name}" "${valueToken}"
             RESULT=""
             return 0
         fi
@@ -251,7 +251,7 @@ environment::getValue "${env1}" $key1 ; \
 
 environment::setVariable "${env1}" $key2 $value2
 
-# Check that we can get the previously existing value out
+# Check that we can get the previously existing key:value out
 environment::getValue "${env1}" $key1 ; \
     variable::value "${RESULT}" ; \
     assert::equals "value one" "${RESULT}" "Multiple variables, first"
@@ -261,62 +261,77 @@ environment::getValue "${env1}" $key2 ; \
     assert::equals "value two" "${RESULT}" "Multiple variables, second"
 
 #
-# Multiple scope tests
+# Multiple scope tests / set
 #
-
+environment::new ; env1="${RESULT}"
+environment::setVariable "${env1}" $key1 $value1
 environment::pushScope "${env1}" ; env2="${RESULT}"
-
-environment::setVariable "${env2}" $key3 $value3
+environment::setVariable "${env2}" $key2 $value2
 
 # Make sure we can get the new value out
-environment::getValue "${env2}" $key3 ; \
-    variable::value "${RESULT}" ; \
-    assert::equals "value three" "${RESULT}" "Second scope"
-# And a variable from the original scope
 environment::getValue "${env2}" $key2 ; \
     variable::value "${RESULT}" ; \
-    assert::equals "value two" "${RESULT}" "Variable from first scope"
-
+    assert::equals "value two" "${RESULT}" "Second scope"
+# And a variable from the original scope
+environment::getValue "${env2}" $key1 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "value one" "${RESULT}" "Variable from first scope"
 # Pop off the second scope
 environment::popScope "${env2}" ; env3="${RESULT}"
-
 # and make sure a variable from the first scope is still there
-environment::getValue "${env3}" $key2 ; \
+environment::getValue "${env3}" $key1 ; \
     variable::value "${RESULT}" ; \
-    assert::equals "value two" "${RESULT}" "Variable from first scope post pop"
+    assert::equals "value one" "${RESULT}" "Variable from first scope post pop"
 # and the variable from the second scope is not
-environment::hasValue "${env3}" $key3 ; \
+environment::hasValue "${env3}" $key2 ; \
     assert::equals 1 $? "Variable from second scope after we popped it"
 
 #
-# Push scope, override a variable, pop scope, and make sure the new value is there
+# Multiple scope tests / set
+#
+environment::new ; env1="${RESULT}"
+environment::setOrReplaceVariable "${env1}" $key1 $value1
+environment::pushScope "${env1}" ; env2="${RESULT}"
+environment::setOrReplaceVariable "${env2}" $key2 $value2
+environment::setOrReplaceVariable "${env2}" $key1 $value3
+
+# Make sure we can get the new value out
+environment::getValue "${env2}" $key2 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "value two" "${RESULT}" "Second scope"
+# And a variable from the original scope
+environment::getValue "${env2}" $key1 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "value three" "${RESULT}" "Variable from first scope"
+# Pop off the second scope
+environment::popScope "${env2}" ; env3="${RESULT}"
+# and make sure a variable from the first scope is still there (new value)
+environment::getValue "${env3}" $key1 ; \
+    variable::value "${RESULT}" ; \
+    assert::equals "value three" "${RESULT}" "Variable from first scope post pop"
+# and the variable from the second scope is not
+environment::hasValue "${env3}" $key2 ; \
+    assert::equals 1 $? "Variable from second scope after we popped it"
+
+
+
+#
+# Second scope, [set] value of variable, then make sure the original env has the old value
 #
 environment::new ; env1="$RESULT"
 environment::setVariable $env1 $key1 $value1
 environment::pushScope "${env1}" ; env2="$RESULT"
 environment::setVariable "${env2}" $key1 $value2
 
-environment::getValue "${env1}" $key1 ; \
+environment::getValue "${env2}" $key1 ; \
     variable::value "${RESULT}" ; \
     assert::equals "value two" "${RESULT}" "Reset variable value, pre pop, old env"
-
-environment::print $env2
-
 environment::getValue "${env2}" $key1 ; \
     variable::value "${RESULT}" ; \
     assert::equals "value two" "${RESULT}" "Reset variable value, pre pop, new env"
-
-environment::popScope "${env2}" ; env3="$RESULT"
-
 environment::getValue "${env1}" $key1 ; \
     variable::value "${RESULT}" ; \
     assert::equals "value two" "${RESULT}" "Reset variable value, post pop, old env"
-environment::getValue "${env2}" $key1 ; \
-    variable::value "${RESULT}" ; \
-    assert::equals "value two" "${RESULT}" "Reset variable value, post pop, new env"
-environment::getValue "${env3}" $key1 ; \
-    variable::value "${RESULT}" ; \
-    assert::equals "value two" "${RESULT}" "Reset variable value, post pop, newest env"
 
 #
 #
