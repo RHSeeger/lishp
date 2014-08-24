@@ -14,3 +14,13 @@ setting to throw an error on undefined variables, the following
 winds up throwing an error. However, the following can be used to "work around" the issue
     ${emptyArray[@]:+${emptyArray[@]}}
 
+Evaluator logic:
+
+eval
+    if Atom, return it (token to value)
+    if Nil, return it (token to value)
+    if List, eval first element, switch on result
+        if Lambda, evaluate the rest of list and call lambda with args
+        if Macro, call it with args (unevaluated)
+        otherwise, error
+    nothing else it can be

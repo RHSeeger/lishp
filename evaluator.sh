@@ -7,10 +7,11 @@ declare -g EVALUATOR_SH=true
 
 . common.sh
 . variables.sh
+. callable.sh
 . environment.sh
 
 declare -g EVALUATOR_VARIABLE="EVAL_RESULT"
-variable::new -name "${EVALUATOR_VARIABLE}" nil nil
+variable::new -name "${EVALUATOR_VARIABLE}" Nil
 
 declare -g EVALUATOR_DEBUG=0
 
@@ -23,7 +24,27 @@ function evaluator::eval() {
     declare envToken="${1}"
     declare exprToken="${2}"
 
-    variable::set ${EVALUATOR_VARIABLE} nil nil
+    variable::set "${EVALUATOR_VARIABLE}" Nil ""
+
+    if variable::type::instanceOf "${exprToken}" Atom; then
+        variable::clone "${exprToken}"
+        return
+    if variable::type::instanceOf "${exprToken}" Callable; then
+        variable::clone "${exprToken}"
+        return
+    elif variable::type::instanceOf "${exprToken}" Identifier; then
+        environment::getValue "${envToken}" "${exprToken}"
+        return
+    elif variable::type::instanceOf "${exprToken}" LinkedList; then
+        # TODO
+        stderr not implemented yet
+        exit 1
+    else 
+        stderr "evaluator::eval / Unhandled type for token [$exprToken]"
+        variable::printMetadata
+        exit 1
+    fi
+    error "should never get here"
 
     variable::type ${exprToken} ; declare type="${RESULT}"
     case "${type}" in
@@ -42,7 +63,7 @@ function evaluator::eval() {
             variable::value "${exprToken}" ; \
                 declare identifierName="${RESULT}"
             environment::lookup "${envToken}" "${identifierName}"
-                declare identifierValueToken="${RESULT}"
+            declare identifierValueToken="${RESULT}"
             variable::type ${identifierValueToken} ; declare type=${RESULT}
             variable::value ${identifierValueToken} ; declare value=${RESULT}
             variable::set ${EVALUATOR_VARIABLE} "${type}" "${value}"
@@ -136,7 +157,7 @@ function evaluator::call_identifier() {
 function evaluator::call_builtinFunction() {
     if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_builtinFunction(${#@}) ${@}" ; fi
 
-    variable::set ${EVALUATOR_VARIABLE} nil nil
+    variable::set ${EVALUATOR_VARIABLE} Nil
 
     declare env="${1}"
     declare identifier="${2}"
@@ -207,16 +228,31 @@ function evaluator::call_builtinMacro() {
 }
 
 
+function evaluator::setup_builtin() {
+    declare env="${1}"
+    declare type="${2}"
+    declare name="${3}"
+    declare identifier="${4}"
+
+    variable::new "${type}" "${name}"
+    declare t1="${RESULT}"
+
+    variable::new String "${identifier}"
+    declare t2="${RESULT}"
+
+    environment::setVariable "${env}" "${t2}" "${t1}"
+}
+
 function evaluator::setup_builtins() {
     declare env="${1}"
 
-    variable::new builtinFunction "add" ; environment::setVariable "${env}" "+" "${RESULT}"
-    variable::new builtinFunction "subtract" ; environment::setVariable "${env}" "-" "${RESULT}"
-    variable::new builtinFunction "multiply" ; environment::setVariable "${env}" "*" "${RESULT}"
-    variable::new builtinFunction "divide" ; environment::setVariable "${env}" "/" "${RESULT}"
-    variable::new builtinFunction "equals" ; environment::setVariable "${env}" "=" "${RESULT}"
+    evaluator::setup_builtin "${env}" BuiltinFunction "add" "+"
+    evaluator::setup_builtin "${env}" BuiltinFunction "subtract" "-"
+    evaluator::setup_builtin "${env}" BuiltinFunction "multiply" "*"
+    evaluator::setup_builtin "${env}" BuiltinFunction "divide" "/"
+    evaluator::setup_builtin "${env}" BuiltinFunction "equals" "="
 
-    variable::new builtinMacro "if" ; environment::setVariable "${env}" "if" "${RESULT}"
+    evaluator::setup_builtin "${env}" BuiltinMacro "if" "if"
 
     environment::pushScope "${env}"
 }
@@ -227,43 +263,77 @@ if [ $0 != $BASH_SOURCE ]; then
     return
 fi
 
-environment::new ; emptyEnv="${RESULT}"
-evaluator::setup_builtins "${emptyEnv}"
+function createTestEnv() {
+    environment::new
+    evaluator::setup_builtins "${RESULT}"
+}
+function setInEnv() {
+    declare env="${1}"
+    declare name="${2}"
+    declare type="${3}"
+    declare value="${4}"
+    variable::new Identifier "${name}" ; declare nameToken="${RESULT}"
+    variable::new "${type}" "${value}" ; declare valueToken="${RESULT}"
+    environment::setVariable "${env}" "${nameToken}" "${valueToken}"
 
+    variable::new Identifier "${name}"
+}
+
+declare env
+
+# Atom, return the value
+createTestEnv ; env="${RESULT}"
+variable::new Boolean true ; valueToken="${RESULT}"
+evaluator::eval "${env}" $valueToken
+variable::debug "${RESULT}" ; \
+    assert::equals "Boolean :: true" "${RESULT}" "atom/boolean"
+
+#
+# Variable
+#
+createTestEnv ; env="${RESULT}"
+setInEnv "${env}" v Integer 4 ; token="${RESULT}"
+evaluator::eval "${env}" "${token}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 4" "${RESULT}" "identifier evaluation"
+
+    
 # +
-variable::new list ; vCode=${RESULT}
-variable::new identifier '+' ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
-evaluator::eval "${emptyEnv}" $vCode
-variable::value ${RESULT} ; \
-    assert::equals 7 "$RESULT" '+ 5 2'
+createTestEnv ; env="${RESULT}"
+variable::LinkedList::new ; vCode="${RESULT}"
+variable::new Identifier '+' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 5 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" $vCode
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 7" "${RESULT}" "(+ 5 2)"
+
 
 # -
-variable::new list ; vCode=${RESULT}
-variable::new identifier '-' ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
+variable::new LinkedList ; vCode=${RESULT}
+variable::new identifier '-' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 5 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
 #variable::printMetadata
 evaluator::eval "${emptyEnv}" $vCode
 variable::value ${RESULT} ; \
     assert::equals 3 "$RESULT" '- 5 2'
 
 # *
-variable::new list ; vCode=${RESULT}
-variable::new identifier '*' ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
+variable::new LinkedList ; vCode=${RESULT}
+variable::new identifier '*' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 5 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
 #variable::printMetadata
 evaluator::eval "${emptyEnv}" $vCode
 variable::value ${RESULT} ; \
     assert::equals 10 "$RESULT" '* 5 2'
 
 # /
-variable::new list ; vCode=${RESULT}
-variable::new identifier '/' ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
+variable::new LinkedList ; vCode=${RESULT}
+variable::new identifier '/' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 5 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
 #variable::printMetadata
 evaluator::eval "${emptyEnv}" $vCode
 variable::value ${RESULT} ; \
@@ -271,19 +341,19 @@ variable::value ${RESULT} ; \
 
 # =
 # = false
-variable::new list ; vCode=${RESULT}
-variable::new identifier '=' ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 5 ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
+variable::new LinkedList ; vCode=${RESULT}
+variable::new identifier '=' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 5 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
 #variable::printMetadata
 evaluator::eval "${emptyEnv}" $vCode
 variable::value ${RESULT} ; \
     assert::equals false "$RESULT" '= 5 2 -> false'
 # = true
-variable::new list ; vCode=${RESULT}
-variable::new identifier '=' ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 3 ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 3 ; variable::list::append ${vCode} ${RESULT}
+variable::new LinkedList ; vCode=${RESULT}
+variable::new identifier '=' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 3 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 3 ; variable::LinkedList::append "${vCode}" "${RESULT}"
 #variable::printMetadata
 evaluator::eval "${emptyEnv}" $vCode
 variable::value ${RESULT} ; \
@@ -304,10 +374,10 @@ environment::new ; env=${RESULT}
 evaluator::setup_builtins "${env}"
 variable::new integer 4 ; environment::setVariable $env "v" "${RESULT}"
 
-variable::new list ; vCode=${RESULT}
-variable::new identifier '+' ; variable::list::append ${vCode} ${RESULT}
-variable::new identifier "v" ; variable::list::append ${vCode} ${RESULT}
-variable::new integer 2 ; variable::list::append ${vCode} ${RESULT}
+variable::new LinkedList ; vCode=${RESULT}
+variable::new identifier '+' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
 evaluator::eval "${env}" "${vCode}"
 variable::value ${RESULT} ; \
     assert::equals 6 "${RESULT}" "env lookup as arguement"

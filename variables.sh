@@ -248,7 +248,14 @@ function _variable::value_p() {
     echo "$RESULT"
 }
 
-# == ATOM ==
+function variable::debug() {
+    declare token="${1}"
+    variable::type "${token}"
+    declare type="${RESULT}"
+    variable::value "${token}"
+    declare value="${RESULT}"
+    RESULT="${type} :: ${value}"
+}
 
 
 #
