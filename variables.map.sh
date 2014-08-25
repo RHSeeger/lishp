@@ -137,9 +137,15 @@ function variable::Map::print() {
     declare indent="${2-}"
     
     variable::value $mapToken ; declare -a items
-    if [[ "${RESULT}" == "" ]]; then items=() ; else items=(${RESULT}) ; fi
+    if [[ "${RESULT}" == "" ]]; then 
+        items=() 
+        echo "${indent}MAP [${mapToken}=()]"
+    else 
+        items=(${RESULT})
+    echo "${indent}MAP [${mapToken}=(${items[@]})]"
+    fi
 
-    echo "${indent}MAP [$mapToken=(${items[@]})]"
+    
 
     declare size
     declare max_index

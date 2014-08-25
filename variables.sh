@@ -263,11 +263,14 @@ function variable::debug() {
 #
 function variable::printMetadata() {
     stderr "VARIABLES_METADATA"
-    for key in "${!VARIABLES_METADATA[@]}"; do
+    declare keys
+    keys=$(for var in "${!VARIABLES_METADATA[@]}"; do echo "$var"; done | sort -n)
+    for key in ${keys}; do
         stderr "    [${key}]=[${VARIABLES_METADATA[${key}]}]"
     done
     stderr "VARIABLES_VALUES"
-    for key in "${!VARIABLES_VALUES[@]}"; do
+    keys=$(for var in "${!VARIABLES_VALUES[@]}"; do echo "$var"; done | sort -n)
+    for key in ${keys}; do
         stderr "    [${key}]=[${VARIABLES_VALUES[${key}]}]"
     done
     stderr "VARIABLES_INDEX=${VARIABLES_INDEX}"

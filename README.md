@@ -24,3 +24,8 @@ eval
         if Macro, call it with args (unevaluated)
         otherwise, error
     nothing else it can be
+
+Random notes:
+    The [RESULT="${RESULT}"], while effectively a noop, is used to signal to the
+    code reader that we are returning a value, it's just the save value returned
+    by the last thing we call.

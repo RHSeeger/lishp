@@ -1,0 +1,194 @@
+#!/bin/bash
+
+# If this file has already been sourced, just return
+[ ${EVALUATOR__FUNCTIONS_BUILTIN_SH+true} ] && return
+declare -g EVALUATOR__FUNCTIONS_BUILTIN_SH=true
+
+. common.sh
+. variables.sh
+. environment.sh
+
+function evaluator::functions::builtin::add() {
+    if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::functions::builtin::add ${@}" ; fi
+
+    declare env="${1}"
+    declare functionName="${2}"
+    declare argsToken="${3}"
+
+    variable::LinkedList::length "${argsToken}"
+    if [[ $RESULT < 2 ]]; then
+        stderr "add not valid with less than 2 arguments"
+        exit 1
+    fi
+
+    variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
+    variable::value "${headToken}" ; declare result="${RESULT}"
+    variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
+    declare currentToken
+    declare currentValue
+
+    while ! variable::LinkedList::isEmpty_c "${rest}"; do
+        variable::LinkedList::first "${rest}"
+        evaluator::eval "${envToken}" "${RESULT}"
+        currentToken="${RESULT}"
+        if ! variable::type::instanceOf "${currentToken}" Integer; then
+            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            exit 1
+        fi
+        variable::value "${currentToken}" ; currentValue="${RESULT}"
+        (( result += "${currentValue}" ))
+        variable::LinkedList::rest "${rest}"; rest="${RESULT}"
+    done
+
+    variable::new Integer "${result}"
+    RESULT="${RESULT}"
+}
+
+function evaluator::functions::builtin::subtract() {
+    if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::functions::builtin::subtract ${@}" ; fi
+
+    declare env="${1}"
+    declare functionName="${2}"
+    declare argsToken="${3}"
+
+    variable::LinkedList::length "${argsToken}"
+    if [[ $RESULT < 2 ]]; then
+        stderr "add not valid with less than 2 arguments"
+        exit 1
+    fi
+
+    variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
+    variable::value "${headToken}" ; declare result="${RESULT}"
+    variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
+    declare currentToken
+    declare currentValue
+
+    while ! variable::LinkedList::isEmpty_c "${rest}"; do
+        variable::LinkedList::first "${rest}"
+        evaluator::eval "${envToken}" "${RESULT}"
+        currentToken="${RESULT}"
+        if ! variable::type::instanceOf "${currentToken}" Integer; then
+            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            exit 1
+        fi
+        variable::value "${currentToken}" ; currentValue="${RESULT}"
+        (( result -= "${currentValue}" ))
+        variable::LinkedList::rest "${rest}"; rest="${RESULT}"
+    done
+
+    variable::new Integer "${result}"
+    RESULT="${RESULT}"
+}
+
+function evaluator::functions::builtin::multiply() {
+    if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::functions::builtin::multiply ${@}" ; fi
+
+    declare env="${1}"
+    declare functionName="${2}"
+    declare argsToken="${3}"
+
+    variable::LinkedList::length "${argsToken}"
+    if [[ $RESULT < 2 ]]; then
+        stderr "add not valid with less than 2 arguments"
+        exit 1
+    fi
+
+    variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
+    variable::value "${headToken}" ; declare result="${RESULT}"
+    variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
+    declare currentToken
+    declare currentValue
+
+    while ! variable::LinkedList::isEmpty_c "${rest}"; do
+        variable::LinkedList::first "${rest}"
+        evaluator::eval "${envToken}" "${RESULT}"
+        currentToken="${RESULT}"
+        if ! variable::type::instanceOf "${currentToken}" Integer; then
+            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            exit 1
+        fi
+        variable::value "${currentToken}" ; currentValue="${RESULT}"
+        (( result *= "${currentValue}" ))
+        variable::LinkedList::rest "${rest}"; rest="${RESULT}"
+    done
+
+    variable::new Integer "${result}"
+    RESULT="${RESULT}"
+}
+
+function evaluator::functions::builtin::divide() {
+    if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::functions::builtin::divide ${@}" ; fi
+
+    declare env="${1}"
+    declare functionName="${2}"
+    declare argsToken="${3}"
+
+    variable::LinkedList::length "${argsToken}"
+    if [[ $RESULT < 2 ]]; then
+        stderr "add not valid with less than 2 arguments"
+        exit 1
+    fi
+
+    variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
+    variable::value "${headToken}" ; declare result="${RESULT}"
+    variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
+    declare currentToken
+    declare currentValue
+
+    while ! variable::LinkedList::isEmpty_c "${rest}"; do
+        variable::LinkedList::first "${rest}"
+        evaluator::eval "${envToken}" "${RESULT}"
+        currentToken="${RESULT}"
+        if ! variable::type::instanceOf "${currentToken}" Integer; then
+            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            exit 1
+        fi
+        variable::value "${currentToken}" ; currentValue="${RESULT}"
+        (( result /= "${currentValue}" ))
+        variable::LinkedList::rest "${rest}"; rest="${RESULT}"
+    done
+
+    variable::new Integer "${result}"
+    RESULT="${RESULT}"
+}
+
+function evaluator::functions::builtin::equals() {
+    if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::functions::builtin::equals ${@}" ; fi
+
+    declare env="${1}"
+    declare functionName="${2}"
+    declare argsToken="${3}"
+
+    variable::LinkedList::length "${argsToken}"
+    if [[ $RESULT < 2 ]]; then
+        stderr "add not valid with less than 2 arguments"
+        exit 1
+    fi
+
+    variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
+    variable::value "${headToken}" ; declare first="${RESULT}"
+    variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
+    declare currentToken
+    declare currentValue
+
+    while ! variable::LinkedList::isEmpty_c "${rest}"; do
+        variable::LinkedList::first "${rest}"
+        evaluator::eval "${envToken}" "${RESULT}"
+        currentToken="${RESULT}"
+        if ! variable::type::instanceOf "${currentToken}" Integer; then
+            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            exit 1
+        fi
+        variable::value "${currentToken}" ; currentValue="${RESULT}"
+        if [[ $first -ne $currentValue ]]; then
+            variable::new Boolean false
+            RESULT="${RESULT}"
+            return
+        fi
+        variable::LinkedList::rest "${rest}"; rest="${RESULT}"
+    done
+
+    variable::new Boolean true
+    RESULT="${RESULT}"
+    return
+}
