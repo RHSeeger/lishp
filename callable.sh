@@ -153,8 +153,10 @@ function appendToList() {
 
 
 declare env
-    
-# +
+
+#
+# not using env
+#
 createTestEnv ; lambdaEnv="${RESULT}"
 variable::LinkedList::new ; lambdaArgs="${RESULT}"
 appendToList $lambdaArgs Identifier "x" Identifier "y"
@@ -168,6 +170,24 @@ appendToList $callingArgs Integer 5 Integer 3
 variable::Lambda::call $lambda $callingArgs
 variable::debug "${RESULT}" ; \
     assert::equals "Integer :: 15" "${RESULT}" "((lambda (x y) (* x y) 5 3)"
+
+#
+# using env
+#
+createTestEnv ; lambdaEnv="${RESULT}"
+setInEnv $lambdaEnv "y" Integer 10
+variable::LinkedList::new ; lambdaArgs="${RESULT}"
+appendToList $lambdaArgs Identifier "x"
+variable::LinkedList::new ; lambdaCode="${RESULT}"
+appendToList $lambdaCode Identifier '*' Identifier "x" Identifier "y"
+variable::Lambda::new "$lambdaEnv $lambdaArgs $lambdaCode" ; lambda="${RESULT}"
+
+variable::LinkedList::new ; callingArgs="${RESULT}"
+appendToList $callingArgs Integer 5
+
+variable::Lambda::call $lambda $callingArgs
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 50" "${RESULT}" "env(y=10) ((lambda (x) (* x y) 5)"
 
 #variable::printMetadata
 #echo "typeof ${vCode}=$(variable::type_p $vCode)"
