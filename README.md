@@ -29,3 +29,7 @@ Random notes:
     The [RESULT="${RESULT}"], while effectively a noop, is used to signal to the
     code reader that we are returning a value, it's just the save value returned
     by the last thing we call.
+
+    This is an implementation of a Lisp-1, meaning that functions and variables
+    share the same namespace (like Scheme)
+
