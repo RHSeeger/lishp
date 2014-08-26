@@ -33,7 +33,8 @@ function evaluator::functions::builtin::add() {
         evaluator::eval "${env}" "${RESULT}"
         currentToken="${RESULT}"
         if ! variable::type::instanceOf "${currentToken}" Integer; then
-            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            variable::type ${currentToken}
+            stderr "Cannot add type [${RESULT}]"
             exit 1
         fi
         variable::value "${currentToken}" ; currentValue="${RESULT}"
@@ -70,7 +71,8 @@ function evaluator::functions::builtin::subtract() {
         evaluator::eval "${envToken}" "${RESULT}"
         currentToken="${RESULT}"
         if ! variable::type::instanceOf "${currentToken}" Integer; then
-            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            variable::type ${currentToken}
+            stderr "Cannot add type [${RESULT}]"
             exit 1
         fi
         variable::value "${currentToken}" ; currentValue="${RESULT}"
@@ -107,7 +109,8 @@ function evaluator::functions::builtin::multiply() {
         evaluator::eval "${envToken}" "${RESULT}"
         currentToken="${RESULT}"
         if ! variable::type::instanceOf "${currentToken}" Integer; then
-            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            variable::type ${currentToken}
+            stderr "Cannot add type [${RESULT}]"
             exit 1
         fi
         variable::value "${currentToken}" ; currentValue="${RESULT}"
@@ -144,7 +147,8 @@ function evaluator::functions::builtin::divide() {
         evaluator::eval "${envToken}" "${RESULT}"
         currentToken="${RESULT}"
         if ! variable::type::instanceOf "${currentToken}" Integer; then
-            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            variable::type ${currentToken}
+            stderr "Cannot add type [${RESULT}]"
             exit 1
         fi
         variable::value "${currentToken}" ; currentValue="${RESULT}"
@@ -181,7 +185,8 @@ function evaluator::functions::builtin::equals() {
         evaluator::eval "${envToken}" "${RESULT}"
         currentToken="${RESULT}"
         if ! variable::type::instanceOf "${currentToken}" Integer; then
-            stderr "Cannot add type $(variable::type_p ${currentToken})"
+            variable::type ${currentToken}
+            stderr "Cannot add type [${RESULT}]"
             exit 1
         fi
         variable::value "${currentToken}" ; currentValue="${RESULT}"
