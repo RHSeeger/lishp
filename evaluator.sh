@@ -118,8 +118,8 @@ function evaluator::eval_list() {
             RESULT="${RESULT}"
             ;;
         Lambda)
-            stderr "evaluator::eval_list / evaluator::eval_list <lambda> not implemented yet"
-            exit 1
+            evaluator::call_lambda "${envToken}" "${headItem}" "${rest}"
+            RESULT="${RESULT}"
             ;;
         Macro)
             stderr "evaluator::eval_list / evaluator::eval_list <macro> not implemented yet"
@@ -160,6 +160,26 @@ function evaluator::call_builtinFunction() {
         exit 1
     fi
     eval "${functionName}" "${env}" "${functionName}" "${argsToken}"
+    RESULT="${RESULT}"
+}
+
+function evaluator::call_lambda() {
+    if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_lambda ${@}" ; fi
+
+    declare env="${1}"
+    declare lambdaToken="${2}"
+    declare argsToken="${3}"
+
+    variable::LinkedList::new ; declare passedArgs="${RESULT}"
+
+    while ! variable::LinkedList::isEmpty_c "${argsToken}"; do
+        variable::LinkedList::first "${argsToken}"
+        evaluator::eval "${env}" "${RESULT}"
+        variable::LinkedList::append $passedArgs "${RESULT}"
+        variable::LinkedList::rest "${argsToken}"; argsToken="${RESULT}"
+    done
+
+    variable::Lambda::call $lambdaToken $passedArgs
     RESULT="${RESULT}"
 }
 
@@ -420,6 +440,29 @@ variable::LinkedList::append $vCode $slistOne
 evaluator::eval "${env}" "${vCode}"
 variable::debug "${RESULT}" ; \
     assert::equals "Integer :: 16" "${RESULT}" "(* (+ 4 <v=4>) (- 4 <w=2>))"
+
+#
+# lambda
+#
+createTestEnv ; lambdaEnv="${RESULT}"
+setInEnv $lambdaEnv "y" Integer 10
+variable::LinkedList::new ; lambdaArgs="${RESULT}"
+appendToList $lambdaArgs Identifier "x"
+variable::LinkedList::new ; lambdaCode="${RESULT}"
+appendToList $lambdaCode Identifier '*' Identifier "x" Identifier "y"
+variable::Lambda::new "$lambdaEnv $lambdaArgs $lambdaCode" ; lambda="${RESULT}"
+
+createTestEnv ; env=${RESULT}
+setInEnv "${env}" "a" Integer 5
+
+variable::new LinkedList ; vCode=${RESULT}
+variable::LinkedList::append $vCode $lambda
+appendToList $vCode Identifier "a"
+
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 50" "${RESULT}" "env(a=5) ((lambda[env(y=10)] (x) (* x y)) a)"
+
 
 
 #variable::printMetadata
