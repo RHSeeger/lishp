@@ -318,8 +318,11 @@ variable::debug "${RESULT}" ; \
 # variable as argument
 #
 createTestEnv ; env="${RESULT}"
+setInEnv "${env}" u Integer 4 ; token="${RESULT}"
 setInEnv "${env}" v Integer 4 ; token="${RESULT}"
+setInEnv "${env}" w Integer 2 ; token="${RESULT}"
 
+# variable as argument / + / first
 variable::new LinkedList ; vCode=${RESULT}
 variable::new Identifier '+' ; variable::LinkedList::append "${vCode}" "${RESULT}"
 variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
@@ -328,13 +331,94 @@ evaluator::eval "${env}" "${vCode}"
 variable::debug "${RESULT}" ; \
     assert::equals "Integer :: 6" "${RESULT}" "(+ <v=4> 2)"
 
+# variable as argument / + / second
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '+' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 6" "${RESULT}" "(+ 2 <v=4>)"
+
+# variable as argument / - / first
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '-' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 2" "${RESULT}" "(- <v=4> 2)"
+
+# variable as argument / - / second
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '-' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: -2" "${RESULT}" "(- 2 <v=4>)"
+
+# variable as argument / * / first
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '*' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 8" "${RESULT}" "(* <v=4> 2)"
+
+# variable as argument / * / second
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '*' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 8" "${RESULT}" "(* 2 <v=4>)"
+
+# variable as argument / / / first
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '/' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 2" "${RESULT}" "(/ <v=4> 2)"
+
+# variable as argument / + / second
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '/' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 12 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Integer :: 3" "${RESULT}" "(/ 12 <v=4>)"
+
+# variable as argument / = / first
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '=' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 2 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Boolean :: false" "${RESULT}" "(= <v=4> 2)"
+
+# variable as argument / + / second
+variable::new LinkedList ; vCode=${RESULT}
+variable::new Identifier '=' ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Integer 4 ; variable::LinkedList::append "${vCode}" "${RESULT}"
+variable::new Identifier "v" ; variable::LinkedList::append "${vCode}" "${RESULT}"
+evaluator::eval "${env}" "${vCode}"
+variable::debug "${RESULT}" ; \
+    assert::equals "Boolean :: true" "${RESULT}" "(= 4 <v=4>)"
+
 
 #variable::printMetadata
 #echo "typeof ${vCode}=$(variable::type_p $vCode)"
 
 assert::report
 
-if [ "$1" == "debug" ]; then 
+if [ ${1+isset} ] && [ "$1" == "debug" ]; then 
     variable::printMetadata
 fi
 

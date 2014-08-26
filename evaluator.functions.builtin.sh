@@ -22,21 +22,22 @@ function evaluator::functions::builtin::add() {
     fi
 
     variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
-    variable::value "${headToken}" ; declare result="${RESULT}"
+    evaluator::eval "${env}" "${RESULT}"
+    variable::value "${RESULT}" ; declare result="${RESULT}"
     variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
     declare currentToken
     declare currentValue
 
     while ! variable::LinkedList::isEmpty_c "${rest}"; do
         variable::LinkedList::first "${rest}"
-        evaluator::eval "${envToken}" "${RESULT}"
+        evaluator::eval "${env}" "${RESULT}"
         currentToken="${RESULT}"
         if ! variable::type::instanceOf "${currentToken}" Integer; then
             stderr "Cannot add type $(variable::type_p ${currentToken})"
             exit 1
         fi
         variable::value "${currentToken}" ; currentValue="${RESULT}"
-        (( result += "${currentValue}" ))
+        (( result += ${currentValue} ))
         variable::LinkedList::rest "${rest}"; rest="${RESULT}"
     done
 
@@ -58,7 +59,8 @@ function evaluator::functions::builtin::subtract() {
     fi
 
     variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
-    variable::value "${headToken}" ; declare result="${RESULT}"
+    evaluator::eval "${env}" "${RESULT}"
+    variable::value "${RESULT}" ; declare result="${RESULT}"
     variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
     declare currentToken
     declare currentValue
@@ -94,7 +96,8 @@ function evaluator::functions::builtin::multiply() {
     fi
 
     variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
-    variable::value "${headToken}" ; declare result="${RESULT}"
+    evaluator::eval "${env}" "${RESULT}"
+    variable::value "${RESULT}" ; declare result="${RESULT}"
     variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
     declare currentToken
     declare currentValue
@@ -130,7 +133,8 @@ function evaluator::functions::builtin::divide() {
     fi
 
     variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
-    variable::value "${headToken}" ; declare result="${RESULT}"
+    evaluator::eval "${env}" "${RESULT}"
+    variable::value "${RESULT}" ; declare result="${RESULT}"
     variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
     declare currentToken
     declare currentValue
@@ -166,7 +170,8 @@ function evaluator::functions::builtin::equals() {
     fi
 
     variable::LinkedList::first "${argsToken}" ; declare headToken="${RESULT}"
-    variable::value "${headToken}" ; declare first="${RESULT}"
+    evaluator::eval "${env}" "${RESULT}"
+    variable::value "${RESULT}" ; declare first="${RESULT}"
     variable::LinkedList::rest "${argsToken}" ; declare rest="${RESULT}"
     declare currentToken
     declare currentValue
