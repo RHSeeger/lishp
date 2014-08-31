@@ -117,6 +117,10 @@ function evaluator::eval_list() {
             evaluator::call_builtinMacro "${envToken}" "${headItem}" "${rest}"
             RESULT="${RESULT}"
             ;;
+        SpecialForm) # Lookup the identifier in the environment and return it's value
+            evaluator::call_specialForm "${envToken}" "${headItem}" "${rest}"
+            RESULT="${RESULT}"
+            ;;
         Lambda)
             evaluator::call_lambda "${envToken}" "${headItem}" "${rest}"
             RESULT="${RESULT}"
@@ -203,6 +207,22 @@ function evaluator::call_builtinMacro() {
     esac
 }
 
+function evaluator::call_specialForm() {
+    if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_specialForm(${#@}) ${@}" ; fi
+
+    declare env="${1}"
+    declare functionToken="${2}"
+    declare argsToken="${3}"
+
+    variable::value "${functionToken}" ; declare functionName="${RESULT}"
+    if ! functionExists $functionName; then
+        stderr "The builtin function [${functionName}] does not exist"
+        exit 1
+    fi
+    eval "${functionName}" "${env}" "${functionName}" "${argsToken}"
+    RESULT="${RESULT}"
+}
+
 
 function evaluator::setup_builtin() {
     declare env="${1}"
@@ -228,7 +248,7 @@ function evaluator::setup_builtins() {
     evaluator::setup_builtin "${env}" BuiltinFunction "/" "evaluator::functions::builtin::divide"
     evaluator::setup_builtin "${env}" BuiltinFunction "=" "evaluator::functions::builtin::equals"
 
-    evaluator::setup_builtin "${env}" BuiltinMacro "if" "if"
+    evaluator::setup_builtin "${env}" SpecialForm "if" "evaluator::specialforms::if"
 
     environment::pushScope "${env}"
 }

@@ -14,8 +14,9 @@ variable::type::define Function Callable
 variable::type::define BuiltinFunction Function
 variable::type::define Lambda Function
 variable::type::define Macro Callable
-variable::type::define BuiltinMacro Macro
 
+#
+# ============================================================
 #
 # Lambda
 #
@@ -110,6 +111,7 @@ function variable::Lambda::getBody() {
 }
 
 
+# 
 # ======================================================
 if [ $0 != $BASH_SOURCE ]; then
     return
