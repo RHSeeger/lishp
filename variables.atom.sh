@@ -17,3 +17,16 @@ variable::type::define Integer Number
 variable::type::define Real Number
 
 
+function variable::Atom::toSexp() {
+    variable::value "${1}"
+    RESULT=${RESULT}
+}
+
+function variable::Identifier::toSexp() {
+    variable::value "${1}"
+    RESULT=${RESULT}
+}
+
+function variable::Nil::toSexp() {
+    RESULT="Nil"
+}

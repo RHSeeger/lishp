@@ -209,6 +209,40 @@ function variable::LinkedList::isEmpty_c() {
     fi
 }
 
+function variable::LinkedList::toSexp() {
+    if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::LinkedList::toSexp ${@}" ; fi
+    declare token="${1}"
+
+    variable::type::instanceOfOrExit "${token}" LinkedList
+
+    declare currToken="${token}"
+    declare node
+    declare -a nodeArr
+    declare -a output=()
+
+    while true; do
+        variable::value "${currToken}"
+        node="${RESULT}"
+        if [ "${node}" == "" ]; then 
+            if [[ ${#output[@]} == 0 ]]; then
+                RESULT=""
+            else
+                RESULT="${output[@]}"
+            fi
+            return 0
+        fi
+        nodeArr=($node)
+        if [ "${#nodeArr[@]}" -ne 2 ]; then
+            stderr "Encountered node with single element at [${currToken}]=[${nodeArr[@]}]"
+            exit 1
+        fi
+        variable::toSexp ${nodeArr[0]}
+        output+=("${RESULT}")
+        currToken="${nodeArr[1]}"
+    done
+    
+    stderr "should never get here" ; exit 1
+}
 
 # ======================================================
 if [ $0 != $BASH_SOURCE ]; then

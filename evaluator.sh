@@ -137,19 +137,6 @@ function evaluator::eval_list() {
     
 }
 
-function functionExists() {
-    declare functionName="${1}"
-
-    declare type=$(type -t "${functionName}")
-    if [[ $? != 0 ]]; then
-        # not found at all
-        return 1
-    elif [[ $type == "function" ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
 
 function evaluator::call_builtinFunction() {
     if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::call_builtinFunction(${#@}) ${@}" ; fi
@@ -249,6 +236,7 @@ function evaluator::setup_builtins() {
     evaluator::setup_builtin "${env}" BuiltinFunction "=" "evaluator::functions::builtin::equals"
 
     evaluator::setup_builtin "${env}" SpecialForm "if" "evaluator::specialforms::if"
+    evaluator::setup_builtin "${env}" SpecialForm "lambda" "evaluator::specialforms::lambda"
 
     environment::pushScope "${env}"
 }

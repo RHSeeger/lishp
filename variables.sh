@@ -257,6 +257,35 @@ function variable::debug() {
     RESULT="${type} :: ${value}"
 }
 
+function variable::toSexp() {
+    declare token="${1}"
+    variable::type $token ; declare type=$RESULT
+
+    if functionExists "variable::${type}::toSexp"; then
+        eval "variable::${type}::toSexp ${token}"
+        RESULT=$RESULT
+        return
+    fi
+    
+    if [[ -z ${VARIABLES_TYPES[${type}]} ]]; then
+        variable::debug $token
+        RESULT=$RESULT
+        return
+    fi
+
+    declare -a actualSuperTypes=(${VARIABLES_TYPES[$type]})
+    declare superType
+    for superType in "${actualSuperTypes[@]}"; do
+        if functionExists "variable::${superType}::toSexp"; then
+            eval "variable::${superType}::toSexp ${token}"
+            RESULT=$RESULT
+            return
+        fi
+    done
+
+    variable::debug $token
+    RESULT=$RESULT
+}
 
 #
 # == Output

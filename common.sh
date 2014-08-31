@@ -15,6 +15,20 @@ function stderr() {
     echo "${@}" 2>&1
 }
 
+function functionExists() {
+    declare functionName="${1}"
+
+    declare type=$(type -t "${functionName}")
+    if [[ $? != 0 ]]; then
+        # not found at all
+        return 1
+    elif [[ $type == "function" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 declare -g -A ASSERT_RESULTS=([total]=0 [passed]=0 [failed]=0)
 
 function assert::equals() {
