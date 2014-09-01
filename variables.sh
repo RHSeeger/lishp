@@ -33,7 +33,7 @@ declare -g -A VARIABLES_TYPES=()
 # == GENERAL ==
 function variable::new() {
     if [[ ${VARIABLES_DEBUG} == 1 ]]; then stderr "variable::new ${@}" ; fi
-
+ 
     declare token
     if [[ "${1}" == "-name" ]]; then
         shift
