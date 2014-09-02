@@ -70,7 +70,7 @@ appendToList $command Integer 1
 
 evaluator::eval $env $command ; lambda=${RESULT}
 variable::toSexp "${lambda}" ; \
-    assert::equals "(lambda () 1)" "(${RESULT})" "(lambda () 1)"
+    assert::equals "(lambda () 1)" "${RESULT}" "(lambda () 1)"
 variable::Lambda::getEnv $lambda ; \
     assert::equals $env $RESULT "<original env> = <stored env>"
 
@@ -90,11 +90,11 @@ appendToList $command Integer 1
 
 evaluator::eval $env $command ; lambda=${RESULT}
 variable::toSexp "${lambda}" ; \
-    assert::equals "(lambda (a b c) 1)" "(${RESULT})" "(lambda (a b c) 1)"
+    assert::equals "(lambda (a b c) 1)" "${RESULT}" "(lambda (a b c) 1)"
 
 #
 # multiple commands
-# (lambda () 1)
+# (lambda () x y)
 #
 createTestEnv ; env="${RESULT}"
 variable::LinkedList::new ; command="${RESULT}"
@@ -107,7 +107,30 @@ appendToList $command Identifier x Identifier y
 
 evaluator::eval $env $command ; lambda=${RESULT}
 variable::toSexp "${lambda}" ; \
-    assert::equals "(lambda () x y)" "(${RESULT})" "(lambda () x y)"
+    assert::equals "(lambda () x y)" "${RESULT}" "(lambda () x y)"
+
+#
+# multiple commands as lists
+# (lambda () (+ 1 2) (+ 2 3))
+#
+createTestEnv ; env="${RESULT}"
+variable::LinkedList::new ; command="${RESULT}"
+appendToList $command Identifier "lambda" 
+
+variable::LinkedList::new ;
+variable::LinkedList::append $command $RESULT
+
+variable::LinkedList::new ; sc1=${RESULT}
+appendToList $sc1 Identifier + Integer 1 Integer 2
+variable::LinkedList::append $command $sc1
+
+variable::LinkedList::new ; sc2=${RESULT}
+appendToList $sc2 Identifier + Integer 2 Integer 3
+variable::LinkedList::append $command $sc2
+
+evaluator::eval $env $command ; lambda=${RESULT}
+variable::toSexp "${lambda}" ; \
+    assert::equals "(lambda () (+ 1 2) (+ 2 3))" "${RESULT}" "(lambda () (+ 1 2) (+ 2 3))"
 
 
 

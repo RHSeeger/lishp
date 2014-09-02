@@ -116,8 +116,10 @@ function variable::Lambda::toSexp() {
 
     variable::toSexp $args ; declare argsString=$RESULT
     variable::toSexp $body ; declare bodyString=$RESULT
+    declare bodyLen ; (( bodyLen = ${#bodyString} - 2 ))
+    bodyString=${bodyString:1:bodyLen}
 
-    RESULT="lambda (${argsString}) $bodyString"
+    RESULT="(lambda ${argsString} $bodyString)"
 }
 
 # 

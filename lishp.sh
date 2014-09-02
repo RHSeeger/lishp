@@ -53,7 +53,9 @@ ${var}
     exit 1
 fi
 echo "Parsed!"
+variable::printMetadata 
 variable::toSexp "${PARSER_PARSED}" ; echo ${RESULT}
+variable::debug "${PARSER_PARSED}" ; echo ${RESULT}
 
 environment::new ; declare env=${RESULT}
 evaluator::setup_builtins "${env}"

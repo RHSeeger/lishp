@@ -40,6 +40,7 @@ function evaluator::eval() {
         RESULT="${RESULT}"
         return
     elif variable::type::instanceOf "${exprToken}" LinkedList; then
+        echo "Calling eval_list [${@}]"
         evaluator::eval_list "${@}"
         RESULT="${RESULT}"
         return
@@ -105,6 +106,11 @@ function evaluator::eval_list() {
     evaluator::eval "${envToken}" "${RESULT}" ; declare headItem="${RESULT}"
     variable::type "${headItem}" ; declare headType="${RESULT}"
     variable::value "${headItem}" ; declare headValue="${RESULT}"
+
+    variable::debug $headItem
+    echo "HEAD ($listToken : $headType -> $headItem): $RESULT" 
+    variable::toSexp $listToken
+    echo "Full List: $RESULT"
 
     variable::LinkedList::rest $listToken ; declare rest="${RESULT}"
 
