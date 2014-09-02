@@ -5,8 +5,8 @@
 declare -g PARSER_SH=true
 
 . common.sh
-. variable.sh
-. variable.linkedlist.sh
+. variables.sh
+. variables.linkedlist.sh
 
 declare -g PARSER_DEBUG=0
 declare -g PARSER_PARSED
@@ -109,7 +109,7 @@ function parser::parse::identifier() {
     if [[ $? == 0 ]]; then
         variable::new Identifier "${value}"
         PARSER_PARSED="${RESULT}"
-        PARSER_PARSED_COUNT=$(expr length "${PARSER_PARSED}")
+        PARSER_PARSED_COUNT=$(expr length "${value}")
         return 0
     fi
 
@@ -158,10 +158,9 @@ function parser::parse::sexp() {
 
     declare text="${1}"
     declare originalOffset="${2-0}"
-    declare subtext="${1:${offset}}"
     declare offset=$originalOffset
 
-    if [[ "${subtext:0:1}" != "(" ]]; then
+    if [[ "${text:${offset}:1}" != "(" ]]; then
         PARSER_PARSED=""
         PARSER_PARSED_COUNT=0
         return 1
@@ -379,7 +378,6 @@ parser::parse "((a) (b) c)" ; assert::equals 0 $? "nested element sexp / code"
 assert::equals 11 ${PARSER_PARSED_COUNT} "nested element sexp / count"
 variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "nested element sexp / type"
 variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 3 ${RESULT} "nested element sexp / length"
-
 
 assert::report
 
