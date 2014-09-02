@@ -225,9 +225,9 @@ function variable::LinkedList::toSexp() {
         node="${RESULT}"
         if [ "${node}" == "" ]; then 
             if [[ ${#output[@]} == 0 ]]; then
-                RESULT=""
+                RESULT="()"
             else
-                RESULT="${output[@]}"
+                RESULT="(${output[@]})"
             fi
             return 0
         fi

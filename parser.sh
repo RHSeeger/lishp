@@ -23,10 +23,12 @@ function parser::parse::substring() {
     declare offset="${2-0}"
 
     if parser::parse::atom "${text}" "${offset}"; then
+        echo "Parsed atom substring [length=${PARSER_PARSED_COUNT}] at [${text:${offset}}]"
         PARSER_PARSED="${PARSER_PARSED}"
         PARSER_PARSED_COUNT="${PARSER_PARSED_COUNT}"
         return 0
     elif parser::parse::sexp "${text}" "${offset}"; then
+        echo "Parsed sexp substring [length=${PARSER_PARSED_COUNT}] at [${text:${offset}}]"
         PARSER_PARSED="${PARSER_PARSED}"
         PARSER_PARSED_COUNT="${PARSER_PARSED_COUNT}"
         return 0
@@ -41,18 +43,22 @@ function parser::parse::atom() {
     if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::atom ${@}" ; fi
 
     if parser::parse::real "${text}" "${offset}"; then
+        echo "Parsed real substring [length=${PARSER_PARSED_COUNT}] at [${text:${offset}}]"
         PARSER_PARSED="${PARSER_PARSED}"
         PARSER_PARSED_COUNT="${PARSER_PARSED_COUNT}"
         return 0
     elif parser::parse::integer "${text}" "${offset}"; then
+        echo "Parsed integer substring [length=${PARSER_PARSED_COUNT}] at [${text:${offset}}]"
         PARSER_PARSED="${PARSER_PARSED}"
         PARSER_PARSED_COUNT="${PARSER_PARSED_COUNT}"
         return 0
     elif parser::parse::identifier "${text}" "${offset}"; then
+        echo "Parsed identifier substring [length=${PARSER_PARSED_COUNT}] at [${text:${offset}}]"
         PARSER_PARSED="${PARSER_PARSED}"
         PARSER_PARSED_COUNT="${PARSER_PARSED_COUNT}"
         return 0
     elif parser::parse::string "${text}" "${offset}"; then
+        echo "Parsed string substring [length=${PARSER_PARSED_COUNT}] at [${text:${offset}}]"
         PARSER_PARSED="${PARSER_PARSED}"
         PARSER_PARSED_COUNT="${PARSER_PARSED_COUNT}"
         return 0
@@ -81,7 +87,7 @@ function parser::parse::integer() {
     if [[ $? == 0 ]]; then
         variable::new Integer "${value}"
         PARSER_PARSED="${RESULT}"
-        PARSER_PARSED_COUNT=$(expr length "${value}")
+        PARSER_PARSED_COUNT="${#value}"
         return 0
     fi
 
@@ -98,7 +104,7 @@ function parser::parse::integer() {
 #
 # Identifier
 #
-declare -g PARSER_IDENTIFIER_REGEX='\([a-zA-Z][a-zA-Z0-9!?+_-:]*\)'
+declare -g PARSER_IDENTIFIER_REGEX='\([a-zA-Z!?+_:-][a-zA-Z0-9!?+_:-]*\)'
 function parser::parse::identifier() {
     if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::identifier ${@}" ; fi
 
@@ -109,7 +115,7 @@ function parser::parse::identifier() {
     if [[ $? == 0 ]]; then
         variable::new Identifier "${value}"
         PARSER_PARSED="${RESULT}"
-        PARSER_PARSED_COUNT=$(expr length "${value}")
+        PARSER_PARSED_COUNT="${#value}"
         return 0
     fi
 
