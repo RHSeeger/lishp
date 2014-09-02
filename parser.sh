@@ -5,6 +5,8 @@
 declare -g PARSER_SH=true
 
 . common.sh
+. variable.sh
+. variable.linkedlist.sh
 
 declare -g PARSER_DEBUG=0
 declare -g PARSER_PARSED
@@ -155,20 +157,83 @@ function parser::parse::sexp() {
     if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::sexp ${@}" ; fi
 
     declare text="${1}"
-    declare offset="${2-0}"
+    declare originalOffset="${2-0}"
     declare subtext="${1:${offset}}"
+    declare offset=$originalOffset
 
     if [[ "${subtext:0:1}" != "(" ]]; then
+        PARSER_PARSED=""
+        PARSER_PARSED_COUNT=0
         return 1
     fi
+    (( offset += 1 ))
 
-    # TODO: Parse a list of items
+    # (
+    #     w? )
+    #     w? p 
+    #            w? )
+    #            w p
+    #                 w? )
+    #                 w p
 
-    if [[ "${subtext:0:1}" != ")" ]]; then
-        return 1
+    # Parse a list of items
+    variable::LinkedList::new ; declare items="${RESULT}"
+
+    # Prune any beginning whitespace
+    if parser::parse::whitespace "$text" ${offset}; then
+        (( offset += ${PARSER_PARSED_COUNT} ))
     fi
 
-    return 0
+    # empty list
+    if [[ "${text:${offset}:1}" == ")" ]]; then
+        (( offset += 1 ))
+        PARSER_PARSED=${items}
+        (( PARSER_PARSED_COUNT = offset - originalOffset ))
+        return 0
+    fi
+
+    # first item in list
+    if parser::parse "${text}" ${offset}; then
+        variable::LinkedList::append "$items" ${PARSER_PARSED}
+        (( offset += ${PARSER_PARSED_COUNT} ))
+    fi
+
+    # From now on every item is either
+    #    <no whitespace> + <closing paren>
+    #    <whitespace> + <closing paren>
+    #    <whitespace> + <something parsed>
+    while true; do
+        if parser::parse::whitespace "$text" ${offset}; then # can be close paren or parsed
+            (( offset += ${PARSER_PARSED_COUNT} ))
+            if [[ "${text:${offset}:1}" == ")" ]]; then
+                (( offset += 1 ))
+                PARSER_PARSED=${items}
+                (( PARSER_PARSED_COUNT = offset - originalOffset ))
+                return 0
+            elif parser::parse "${text}" ${offset}; then
+                variable::LinkedList::append "$items" "${PARSER_PARSED}"
+                (( offset += ${PARSER_PARSED_COUNT} ))
+            else
+                PARSER_PARSED=""
+                PARSER_PARSED_COUNT=0
+                return 1
+            fi                
+        else # can only be close paren
+            if [[ "${text:${offset}:1}" == ")" ]]; then
+                (( offset += 1 ))
+                PARSER_PARSED=${items}
+                (( PARSER_PARSED_COUNT = offset - originalOffset ))
+                return 0
+            else 
+                PARSER_PARSED=""
+                PARSER_PARSED_COUNT=0
+                return 1
+            fi
+        fi
+    done
+
+    stderr "Should never get here"
+    exit 1
 }
 
 #
@@ -181,15 +246,28 @@ function parser::parse::whitespace() {
     if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::whitespace ${@}" ; fi
 
     declare text="${1}"
-    declare offset="${2-0}"
-    declare subtext="${1:${offset}}"
-    declare value ; value=$(expr match "${subtext}" "$PARSER_WHITESPACE_REGEX")
-    if [[ $? == 0 ]]; then
-        PARSER_PARSED=""
-        PARSER_PARSED_COUNT=$(expr length "${value}")
+    declare originalOffset="${2-0}"
+
+    declare offset=${originalOffset}
+    declare char="${text:${offset}:1}"
+    declare parsed=""
+
+    while [[ $char == " " || $char == "	" || $char == "
+" ]]; do
+        (( offset += 1 ))
+        parsed+="${char}"
+        char="${text:${offset}:1}"
+    done
+
+    if [[ $offset > $originalOffset ]]; then
+        PARSER_PARSED="${parsed}"
+        (( PARSER_PARSED_COUNT = offset - originalOffset ))
         return 0
+    else
+        PARSER_PARSED=""
+        PARSER_PARSED_COUNT=0
+        return 1
     fi
-    return 1
 }
 
 
@@ -259,6 +337,49 @@ assert::equals 5 "${PARSER_PARSED_COUNT}" "parse \"abc\" / count"
 parser::parse::whitespace ' 	 ' ; \
     assert::equals 0 $? "match whitespace / code"
 assert::equals 3 ${PARSER_PARSED_COUNT} "match whitepace / count"
+
+parser::parse::whitespace 'abc def' ; \
+    assert::equals 1 $? "match non-whitespace / code"
+
+parser::parse::whitespace '' ; \
+    assert::equals 1 $? "match empty non-whitespace / code"
+
+parser::parse::whitespace ')' ; \
+    assert::equals 1 $? "match close paren against whitespace / code"
+
+#
+# SEXP
+#
+parser::parse "()" ; assert::equals 0 $? "match empty sexp / code"
+assert::equals 2 ${PARSER_PARSED_COUNT} "match empty sexp / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "match empty sexp / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 0 ${RESULT} "match empty sexp / length"
+
+parser::parse "( )" ; assert::equals 0 $? "match almost empty sexp / code"
+assert::equals 3 ${PARSER_PARSED_COUNT} "match almost empty sexp / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "match almost empty sexp / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 0 ${RESULT} "match almost empty sexp / length"
+
+parser::parse "(a)" ; assert::equals 0 $? "single element sexp / code"
+assert::equals 3 ${PARSER_PARSED_COUNT} "single element sexp / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "single element sexp / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 1 ${RESULT} "single element sexp / length"
+
+parser::parse "( a )" ; assert::equals 0 $? "single element sexp / code"
+assert::equals 5 ${PARSER_PARSED_COUNT} "single element sexp / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "single element sexp / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 1 ${RESULT} "single element sexp / length"
+
+parser::parse "(a b)" ; assert::equals 0 $? "two element sexp / code"
+assert::equals 5 ${PARSER_PARSED_COUNT} "two element sexp / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "two element sexp / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 2 ${RESULT} "two element sexp / length"
+
+parser::parse "((a) (b) c)" ; assert::equals 0 $? "nested element sexp / code"
+assert::equals 11 ${PARSER_PARSED_COUNT} "nested element sexp / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "nested element sexp / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 3 ${RESULT} "nested element sexp / length"
+
 
 assert::report
 
