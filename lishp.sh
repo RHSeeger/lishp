@@ -32,26 +32,17 @@ echo "Sourced libraries!"
 # This will read from the filename specified as a parameter...
 # or from stdin if none specified
 
-# while read line
-# do
-#   echo "$line"
-# done < "${1:-/proc/${$}/fd/0}"
+read -r -d '' code < "${1:-/proc/${$}/fd/0}"
 
-IFS= read var << EOF
-((lambda (x y) 
-         (+ x y))
-  5 10)
-EOF
-var="((lambda (x y) (+ x y)) 5 10)"
 echo "Code read!"
 echo =================
-echo $var
+echo "$code"
 echo =================
 
-if ! parser::parse "${var}"; then
+if ! parser::parse "${code}"; then
     echo "Could not parse input
 ====
-${var}
+${code}
 ===="
     exit 1
 fi
@@ -68,5 +59,5 @@ evaluator::eval ${env} ${PARSER_PARSED}
 variable::debug ${RESULT}
 echo "Done!"
 echo =================
-echo $RESULT
+echo "$RESULT"
 echo =================
