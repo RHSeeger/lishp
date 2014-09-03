@@ -33,3 +33,22 @@ Random notes:
     This is an implementation of a Lisp-1, meaning that functions and variables
     share the same namespace (like Scheme)
 
+Examples
+========
+
+```
+> ./lishp.sh examples/lambda.simple.lishp 
+Sourced libraries!
+Code read!
+=================
+((lambda (x y) 
+         (+ x y))
+  5 10)
+=================
+Parsed!
+Environment setup!
+Done!
+=================
+Integer :: 15
+=================
+```
