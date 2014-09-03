@@ -44,6 +44,9 @@ IFS= read var << EOF
 EOF
 var="((lambda (x y) (+ x y)) 5 10)"
 echo "Code read!"
+echo =================
+echo $var
+echo =================
 
 if ! parser::parse "${var}"; then
     echo "Could not parse input
@@ -53,14 +56,17 @@ ${var}
     exit 1
 fi
 echo "Parsed!"
-variable::printMetadata 
-variable::toSexp "${PARSER_PARSED}" ; echo ${RESULT}
-variable::debug "${PARSER_PARSED}" ; echo ${RESULT}
+#variable::printMetadata 
+#variable::toSexp "${PARSER_PARSED}" ; echo ${RESULT}
+#variable::debug "${PARSER_PARSED}" ; echo ${RESULT}
 
 environment::new ; declare env=${RESULT}
 evaluator::setup_builtins "${env}"
 echo "Environment setup!"
 
 evaluator::eval ${env} ${PARSER_PARSED}
-evaluator::debug ${RESULT}
+variable::debug ${RESULT}
 echo "Done!"
+echo =================
+echo $RESULT
+echo =================

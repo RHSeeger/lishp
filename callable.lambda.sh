@@ -71,8 +71,16 @@ function variable::Lambda::call() {
         environment::setVariable "${runningEnv}" $thisKeyToken $thisValueToken
     done
 
-    evaluator::eval $runningEnv $body
-    RESULT="${RESULT}"
+    variable::debug $body
+
+    declare currentSexp currentResult
+    while ! variable::LinkedList::isEmpty_c "${body}" ; do
+        variable::LinkedList::first "${body}" ; currentSexp=${RESULT}
+        variable::LinkedList::rest "${body}" ; body=${RESULT}
+        evaluator::eval $runningEnv $currentSexp
+        currentResult=${RESULT}
+    done
+    RESULT="${currentResult}"
 }
 
 function variable::Lambda::getEnv() {
@@ -136,9 +144,11 @@ fi
 createTestEnv ; lambdaEnv="${RESULT}"
 variable::LinkedList::new ; lambdaArgs="${RESULT}"
 appendToList $lambdaArgs Identifier "x" Identifier "y"
+variable::LinkedList::new ; lambdaBody="${RESULT}"
 variable::LinkedList::new ; lambdaCode="${RESULT}"
 appendToList $lambdaCode Identifier '*' Identifier "x" Identifier "y"
-variable::Lambda::new "$lambdaEnv $lambdaArgs $lambdaCode" ; lambda="${RESULT}"
+variable::LinkedList::append $lambdaBody $lambdaCode
+variable::Lambda::new "$lambdaEnv $lambdaArgs $lambdaBody" ; lambda="${RESULT}"
 
 variable::LinkedList::new ; callingArgs="${RESULT}"
 appendToList $callingArgs Integer 5 Integer 3
@@ -154,9 +164,11 @@ createTestEnv ; lambdaEnv="${RESULT}"
 setInEnv $lambdaEnv "y" Integer 10
 variable::LinkedList::new ; lambdaArgs="${RESULT}"
 appendToList $lambdaArgs Identifier "x"
+variable::LinkedList::new ; lambdaBody="${RESULT}"
 variable::LinkedList::new ; lambdaCode="${RESULT}"
 appendToList $lambdaCode Identifier '*' Identifier "x" Identifier "y"
-variable::Lambda::new "$lambdaEnv $lambdaArgs $lambdaCode" ; lambda="${RESULT}"
+variable::LinkedList::append $lambdaBody $lambdaCode
+variable::Lambda::new "$lambdaEnv $lambdaArgs $lambdaBody" ; lambda="${RESULT}"
 
 variable::LinkedList::new ; callingArgs="${RESULT}"
 appendToList $callingArgs Integer 5

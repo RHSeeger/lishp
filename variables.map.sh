@@ -142,7 +142,7 @@ function variable::Map::print() {
         echo "${indent}MAP [${mapToken}=()]"
     else 
         items=(${RESULT})
-    echo "${indent}MAP [${mapToken}=(${items[@]})]"
+        echo "${indent}MAP [${mapToken}=(${items[@]})]"
     fi
 
     
@@ -160,6 +160,32 @@ function variable::Map::print() {
     done
 }
 
+function variable::Map::debug() {
+    declare token="${1}"
+    
+    variable::value $mapToken
+    if [[ "${RESULT}" == "" ]]; then
+        RESULT="{}"
+        return
+    fi
+
+    declare -a items=("${RESULT[@]}")
+
+    declare size declare max_index
+    declare currentKey
+    declare currentValue 
+    declare -a formatted=()
+
+    (( size=${#items[@]}, max_index=size-1 ))
+    for ((i=0; i<=max_index; i=i+2)); do
+        variable::value ${items[${i}]} ; currentKey="${RESULT}"
+        variable::value ${items[((i+1))]} ; currentValue="${RESULT}"
+        formatted+=("${currentKey}=${currentValue}")
+    done
+
+    variable::debug::join ", " "${formatted[@]}"
+    RESULT="{$RESULT}"
+}
 
 # ======================================================
 if [ $0 != $BASH_SOURCE ]; then

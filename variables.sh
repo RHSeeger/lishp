@@ -250,11 +250,64 @@ function _variable::value_p() {
 
 function variable::debug() {
     declare token="${1}"
+
+    variable::type $token ; declare type=$RESULT
+
+    if functionExists "variable::${type}::debug"; then
+        eval "variable::${type}::debug ${token}"
+        RESULT=$RESULT
+        return
+    fi
+    
+    if [[ -z ${VARIABLES_TYPES[${type}]} ]]; then
+        variable::debug::simple $token
+        RESULT=$RESULT
+        return
+    fi
+
+    declare -a actualSuperTypes=(${VARIABLES_TYPES[$type]})
+    declare superType
+    for superType in "${actualSuperTypes[@]}"; do
+        if functionExists "variable::${superType}::debug"; then
+            eval "variable::${superType}::debug ${token}"
+            RESULT=$RESULT
+            return
+        fi
+    done
+
+    variable::debug::simple $token
+    RESULT=$RESULT
+}
+
+function variable::debug::simple() {
+    declare token="${1}"
     variable::type "${token}"
     declare type="${RESULT}"
     variable::value "${token}"
     declare value="${RESULT}"
     RESULT="${type} :: ${value}"
+}
+
+function variable::debug::join() {
+    declare joinChar=${1}
+
+    if [[ ${#@} == 1 ]]; then 
+        RESULT=""
+        return
+    fi
+    if [[ ${#@} == 2 ]]; then
+        RESULT="${2}"
+        return
+    fi
+
+    declare -a items=("${@:2}")
+    declare size declare max_index
+    RESULT="${2}"
+
+    (( size=${#items[@]}, max_index=size-1 ))
+    for (( i=1; i<=max_index; i+=1 )); do
+        RESULT="${RESULT}${joinChar}${items[$i]}"
+    done
 }
 
 function variable::toSexp() {
