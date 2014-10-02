@@ -4,12 +4,12 @@
 [ ${CALLABLE_LAMBDA_SH+true} ] && return
 declare -g CALLABLE_LAMBDA_SH=true
 
-. common.sh
-. variables.sh
-. variables.linkedlist.sh
-. specialforms.sh
-. evaluator.sh
-. callable.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/variables.linkedlist.sh
+. ${BASH_SOURCE%/*}/specialforms.sh
+. ${BASH_SOURCE%/*}/evaluator.sh
+. ${BASH_SOURCE%/*}/callable.sh
 
 variable::type::define Lambda Function
 

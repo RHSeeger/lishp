@@ -5,11 +5,11 @@
 declare -g EVALUATOR_SH=true
 
 
-. common.sh
-. variables.sh
-. callable.sh
-. environment.sh
-. evaluator.functions.builtin.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/callable.sh
+. ${BASH_SOURCE%/*}/environment.sh
+. ${BASH_SOURCE%/*}/evaluator.functions.builtin.sh
 
 declare -g EVALUATOR_DEBUG=0
 

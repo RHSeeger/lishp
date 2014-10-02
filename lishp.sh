@@ -4,24 +4,24 @@
 [ ${LISHP_SH+true} ] && return
 declare -g LISHP_SH=true
 
-. common.sh
-. variables.sh
-. variables.arraylist.sh
-. variables.atom.sh
-. variables.linkedlist.sh
-. variables.map.sh
-. variables.queue.sh
-. variables.stack.sh
-. callable.sh
-. callable.lambda.sh
-. environment.sh
-. evaluator.sh
-. evaluator.functions.builtin.sh
-. parser.sh
-. logger.sh
-. specialforms.sh
-. specialforms.if.sh
-. specialforms.lambda.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/variables.arraylist.sh
+. ${BASH_SOURCE%/*}/variables.atom.sh
+. ${BASH_SOURCE%/*}/variables.linkedlist.sh
+. ${BASH_SOURCE%/*}/variables.map.sh
+. ${BASH_SOURCE%/*}/variables.queue.sh
+. ${BASH_SOURCE%/*}/variables.stack.sh
+. ${BASH_SOURCE%/*}/callable.sh
+. ${BASH_SOURCE%/*}/callable.lambda.sh
+. ${BASH_SOURCE%/*}/environment.sh
+. ${BASH_SOURCE%/*}/evaluator.sh
+. ${BASH_SOURCE%/*}/evaluator.functions.builtin.sh
+. ${BASH_SOURCE%/*}/parser.sh
+. ${BASH_SOURCE%/*}/logger.sh
+. ${BASH_SOURCE%/*}/specialforms.sh
+. ${BASH_SOURCE%/*}/specialforms.if.sh
+. ${BASH_SOURCE%/*}/specialforms.lambda.sh
 
 echo "Sourced libraries!"
 

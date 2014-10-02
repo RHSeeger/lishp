@@ -4,8 +4,8 @@
 [ ${VARIABLES_ATOM_SH+true} ] && return
 declare -g VARIABLES_ATOM_SH=true
 
-. common.sh
-. variables.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/variables.sh
 
 variable::type::define Nil
 variable::type::define Identifier

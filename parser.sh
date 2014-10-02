@@ -4,9 +4,9 @@
 [ ${PARSER_SH+true} ] && return
 declare -g PARSER_SH=true
 
-. common.sh
-. variables.sh
-. variables.linkedlist.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/variables.linkedlist.sh
 
 declare -g PARSER_DEBUG=0
 declare -g PARSER_PARSED

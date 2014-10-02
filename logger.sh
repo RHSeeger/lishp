@@ -5,7 +5,7 @@
 [ ${LOGGER_SH+true} ] && return
 declare -g LOGGER_SH=true
 
-. common.sh
+. ${BASH_SOURCE%/*}/common.sh
 
 declare -g LOGGER_FILE="logfile.txt"
 echo > "${LOGGER_FILE}"

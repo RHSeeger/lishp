@@ -4,10 +4,10 @@
 [ ${TEST_SH+true} ] && return
 declare -g TEST_SH=true
 
-. common.sh
-. variables.sh
-. variables.linkedlist.sh
-. evaluator.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/variables.linkedlist.sh
+. ${BASH_SOURCE%/*}/evaluator.sh
 
 #
 # Functions to help with testing

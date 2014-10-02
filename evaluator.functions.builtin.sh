@@ -4,9 +4,9 @@
 [ ${EVALUATOR__FUNCTIONS_BUILTIN_SH+true} ] && return
 declare -g EVALUATOR__FUNCTIONS_BUILTIN_SH=true
 
-. common.sh
-. variables.sh
-. environment.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/environment.sh
 
 function evaluator::functions::builtin::add() {
     if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::functions::builtin::add ${@}" ; fi

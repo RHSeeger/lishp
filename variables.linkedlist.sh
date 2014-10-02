@@ -4,10 +4,10 @@
 [ ${VARIABLES_LINKEDLIST_SH+true} ] && return
 declare -g VARIABLES_LINKEDLIST_SH=true
 
-. common.sh
-. logger.sh
-. variables.sh
-. variables.atom.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/logger.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/variables.atom.sh
 
 variable::type::define LinkedList
 

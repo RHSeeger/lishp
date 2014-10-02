@@ -14,13 +14,13 @@ declare -g ENVIRONMENT_SH=true
 #    variable-key is the token to lookup a value using the variable:: api
 #
 
-. common.sh
-. variables.sh
-. variables.arraylist.sh
-. variables.linkedlist.sh
-. variables.stack.sh
-. variables.queue.sh
-. variables.map.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/variables.arraylist.sh
+. ${BASH_SOURCE%/*}/variables.linkedlist.sh
+. ${BASH_SOURCE%/*}/variables.stack.sh
+. ${BASH_SOURCE%/*}/variables.queue.sh
+. ${BASH_SOURCE%/*}/variables.map.sh
 
 
 declare -g ENVIRONMENT_DEBUG=0

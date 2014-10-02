@@ -4,11 +4,11 @@
 [ ${VARIABLES_QUEUE_SH+true} ] && return
 declare -g VARIABLES_QUEUE_SH=true
 
-. common.sh
-. logger.sh
-. variables.sh
-. variables.atom.sh
-. variables.arraylist.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/logger.sh
+. ${BASH_SOURCE%/*}/variables.sh
+. ${BASH_SOURCE%/*}/variables.atom.sh
+. ${BASH_SOURCE%/*}/variables.arraylist.sh
 
 variable::type::define ArrayQueue ArrayList
 

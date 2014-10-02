@@ -4,9 +4,9 @@
 [ ${SPECIALFORMS_IF_SH+true} ] && return
 declare -g SPECIALFORMS_IF_SH=true
 
-. common.sh
-. test.sh
-. specialforms.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/test.sh
+. ${BASH_SOURCE%/*}/specialforms.sh
 
 #
 # IF

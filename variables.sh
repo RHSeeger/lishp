@@ -4,8 +4,8 @@
 [ ${VARIABLES_SH+true} ] && return
 declare -g VARIABLES_SH=true
 
-. common.sh
-. logger.sh
+. ${BASH_SOURCE%/*}/common.sh
+. ${BASH_SOURCE%/*}/logger.sh
 
 # TODO: Only set this if it doesn't already exist
 
