@@ -3,6 +3,14 @@
 # If this file has already been sourced, just return
 [ ${LISHP_SH+true} ] && return
 declare -g LISHP_SH=true
+declare -g VERBOSE
+if [ ${1+isset} ] && [ "$1" == "-verbose" ]; then 
+    VERBOSE=true
+    shift
+else
+    VERBOSE=false
+fi
+
 
 . ${BASH_SOURCE%/*}/common.sh
 . ${BASH_SOURCE%/*}/variables.sh
@@ -22,8 +30,9 @@ declare -g LISHP_SH=true
 . ${BASH_SOURCE%/*}/specialforms.sh
 . ${BASH_SOURCE%/*}/specialforms.if.sh
 . ${BASH_SOURCE%/*}/specialforms.lambda.sh
+. ${BASH_SOURCE%/*}/specialforms.let.sh
 
-echo "Sourced libraries!"
+$VERBOSE && echo "Sourced libraries!"
 
 # (lambda (x y)
 #     (+ x y)
@@ -34,10 +43,10 @@ echo "Sourced libraries!"
 
 read -r -d '' code < "${1:-/proc/${$}/fd/0}"
 
-echo "Code read!"
-echo =================
-echo "$code"
-echo =================
+$VERBOSE && echo "Code read!"
+$VERBOSE && echo =================
+$VERBOSE && echo "$code"
+$VERBOSE && echo =================
 
 if ! parser::parse "${code}"; then
     echo "Could not parse input
@@ -46,18 +55,18 @@ ${code}
 ===="
     exit 1
 fi
-echo "Parsed!"
+$VERBOSE && echo "Parsed!"
 #variable::printMetadata 
 #variable::toSexp "${PARSER_PARSED}" ; echo ${RESULT}
 #variable::debug "${PARSER_PARSED}" ; echo ${RESULT}
 
 environment::new ; declare env=${RESULT}
 evaluator::setup_builtins "${env}"
-echo "Environment setup!"
+$VERBOSE && echo "Environment setup!"
 
 evaluator::eval ${env} ${PARSER_PARSED}
 variable::debug ${RESULT}
-echo "Done!"
-echo =================
+$VERBOSE && echo "Done!"
+$VERBOSE && echo =================
 echo "$RESULT"
-echo =================
+$VERBOSE && echo =================

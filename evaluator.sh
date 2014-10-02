@@ -239,6 +239,8 @@ function evaluator::setup_builtins() {
 
     evaluator::setup_builtin "${env}" SpecialForm "if" "evaluator::specialforms::if"
     evaluator::setup_builtin "${env}" SpecialForm "lambda" "evaluator::specialforms::lambda"
+    evaluator::setup_builtin "${env}" SpecialForm "let" "evaluator::specialforms::let"
+    evaluator::setup_builtin "${env}" SpecialForm 'let*' "evaluator::specialforms::letstar"
 
     environment::pushScope "${env}"
 }

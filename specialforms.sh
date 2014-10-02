@@ -17,23 +17,6 @@ variable::type::define SpecialForm Callable
 # Special Forms
 
 #
-# LET
-# 
-# The inits are evaluated in the current environment (in some unspecified order), 
-# the variables are bound to fresh locations holding the results, the expressions
-# are evaluated sequentially in the extended environment, and the value of the
-# last expression is returned. Each binding of a variable has the expressions as
-# its region. 
-#
-# (let ((x 2) (y 3))
-#      (* x y))     
-#
-function evaluator::specialforms::let() {
-    stderr "Not implemented yet"
-    exit 1
-}
-
-#
 # LET*
 #
 # let* is similar to let, but the bindings are performed sequentially from left to
