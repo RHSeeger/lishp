@@ -1,27 +1,29 @@
 #!/bin/bash
 
 # If this file has already been sourced, just return
-[ ${SPECIALFORMS_LET_SH+true} ] && return
-declare -g SPECIALFORMS_LET_SH=true
+[ ${SPECIALFORMS_LETSTAR_SH+true} ] && return
+declare -g SPECIALFORMS_LETSTAR_SH=true
 
 . ${BASH_SOURCE%/*}/common.sh
 . ${BASH_SOURCE%/*}/test.sh
 . ${BASH_SOURCE%/*}/specialforms.sh
 
 #
-# LET
-# 
-# The inits are evaluated in the current environment (in some unspecified order), 
-# the variables are bound to fresh locations holding the results, the expressions
-# are evaluated sequentially in the extended environment, and the value of the
-# last expression is returned. Each binding of a variable has the expressions as
-# its region. 
+# LET*
 #
-# (let ((x 2) (y 3))
-#      (* x y))     
+# let* is similar to let, but the bindings are performed sequentially from left to
+# right, and the region of a binding is that part of the let* expression to the right
+# of the binding. Thus the second binding is done in an environment in which the first
+# binding is visible, and so on.
 #
-
-function evaluator::specialforms::let() {
+# (let* ((variable1 init1)
+#        (variable2 init2)
+#        ...
+#        (variableN initN))
+#     expression
+#     expression ...)
+#
+function evaluator::specialforms::letstar() {
     declare env="${1}"
     declare functionName="${2}" # let
     declare args="${3}" # list of <formal args list>, <expression>,...,<expression>
@@ -49,7 +51,7 @@ function evaluator::specialforms::let() {
         
         variable::LinkedList::index "${thisBinding}" 0 ; thisKey="${RESULT}"
         variable::LinkedList::index "${thisBinding}" 1 ; thisValue="${RESULT}"
-        evaluator::eval $env $thisValue
+        evaluator::eval $runningEnv $thisValue
         environment::setVariable "${runningEnv}" $thisKey $RESULT
     done
 

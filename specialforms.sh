@@ -16,25 +16,6 @@ variable::type::define SpecialForm Callable
 #
 # Special Forms
 
-#
-# LET*
-#
-# let* is similar to let, but the bindings are performed sequentially from left to
-# right, and the region of a binding is that part of the let* expression to the right
-# of the binding. Thus the second binding is done in an environment in which the first
-# binding is visible, and so on.
-#
-# (let* ((variable1 init1)
-#        (variable2 init2)
-#        ...
-#        (variableN initN))
-#     expression
-#     expression ...)
-#
-function evaluator::specialforms::letstar() {
-    stderr "Not implemented yet"
-    exit 1
-}
 
 #
 # DEFINE

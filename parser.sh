@@ -17,7 +17,7 @@ function parser::parse() {
 }
 
 function parser::parse::substring() {
-    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 
     declare text="${1}"
     declare offset="${2-0}"
@@ -40,7 +40,7 @@ ${text:${offset}}"
 }
 
 function parser::parse::atom() {
-    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::atom ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 
     if parser::parse::real "${text}" "${offset}"; then
         #echo "Parsed real substring [length=${PARSER_PARSED_COUNT}] at [${text:${offset}}]"
@@ -67,7 +67,9 @@ function parser::parse::atom() {
 }
 
 function parser::parse::real() {
-    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::real ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "Trying to parse real from:
+${text:${offset}}" ; fi
     return 1
 }
 
@@ -77,11 +79,14 @@ function parser::parse::real() {
 declare -g PARSER_INTEGER_REGEX='\(-\?[1-9][0-9]*\)'
 declare -g PARSER_INTEGER_0_REGEX='\(0\)'
 function parser::parse::integer() {
-    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::integer ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 
     declare text="${1}"
     declare offset="${2-0}"
     declare subtext="${1:${offset}}"
+
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "Trying to parse integer from:
+${text:${offset}}" ; fi
 
     declare value ; value=$(expr match "${subtext}" $PARSER_INTEGER_REGEX)
     if [[ $? == 0 ]]; then
@@ -104,13 +109,17 @@ function parser::parse::integer() {
 #
 # Identifier
 #
-declare -g PARSER_IDENTIFIER_REGEX='\([a-zA-Z!?+_:-][a-zA-Z0-9!?+_:-]*\)'
+declare -g PARSER_IDENTIFIER_REGEX='\([a-zA-Z!?*+_:-][a-zA-Z0-9!?*+_:-]*\)'
 function parser::parse::identifier() {
-    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::identifier ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 
     declare text="${1}"
     declare offset="${2-0}"
     declare subtext="${1:${offset}}"
+
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "Trying to parse identifier from:
+${subtext}" ; fi
+
     declare value ; value=$(expr match "${subtext}" $PARSER_IDENTIFIER_REGEX)
     if [[ $? == 0 ]]; then
         variable::new Identifier "${value}"
@@ -127,11 +136,14 @@ function parser::parse::identifier() {
 #
 declare -g PARSER_STRING_REGEX='\([^"]*\)'
 function parser::parse::string() {
-    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::string ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 
     declare text="${1}"
     declare offset="${2-0}"
     declare subtext="${1:${offset}}"
+
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "Trying to parse string from:
+${subtext}" ; fi
 
     if [[ "${subtext:0:1}" != "\"" ]]; then
         return 1
@@ -160,11 +172,14 @@ function parser::parse::string() {
 # sexp
 #
 function parser::parse::sexp() {
-    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::sexp ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 
     declare text="${1}"
     declare originalOffset="${2-0}"
     declare offset=$originalOffset
+
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "Trying to parse sexp from:
+${text:${offset}}" ; fi
 
     if [[ "${text:${offset}:1}" != "(" ]]; then
         PARSER_PARSED=""
@@ -248,10 +263,13 @@ declare -g PARSER_WHITESPACE_REGEX='\([
 ][ 	
 ]*\)'
 function parser::parse::whitespace() {
-    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "parser::parse::whitespace ${@}" ; fi
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 
     declare text="${1}"
     declare originalOffset="${2-0}"
+
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "Trying to parse whitespace from:
+${text:${originalOffset}}" ; fi
 
     declare offset=${originalOffset}
     declare char="${text:${offset}:1}"
@@ -264,7 +282,7 @@ function parser::parse::whitespace() {
         char="${text:${offset}:1}"
     done
 
-    if [[ $offset > $originalOffset ]]; then
+    if [[ $offset -gt $originalOffset ]]; then
         PARSER_PARSED="${parsed}"
         (( PARSER_PARSED_COUNT = offset - originalOffset ))
         return 0

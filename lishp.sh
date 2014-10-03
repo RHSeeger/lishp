@@ -31,6 +31,7 @@ fi
 . ${BASH_SOURCE%/*}/specialforms.if.sh
 . ${BASH_SOURCE%/*}/specialforms.lambda.sh
 . ${BASH_SOURCE%/*}/specialforms.let.sh
+. ${BASH_SOURCE%/*}/specialforms.letstar.sh
 
 $VERBOSE && echo "Sourced libraries!"
 
