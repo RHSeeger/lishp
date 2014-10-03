@@ -31,7 +31,7 @@ value=$(../lishp.sh <<EOF
   2) 3)
 EOF
 )
-assert::equals "Integer :: 6" "${value}" "Returning lambda with closure"
+assert::equals "Integer :: 5" "${value}" "Returning lambda with closure"
 
 
 
