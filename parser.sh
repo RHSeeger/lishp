@@ -109,7 +109,7 @@ ${text:${offset}}" ; fi
 #
 # Identifier
 #
-declare -g PARSER_IDENTIFIER_REGEX='\([a-zA-Z!?*+_:-][a-zA-Z0-9!?*+_:-]*\)'
+declare -g PARSER_IDENTIFIER_REGEX='\([a-zA-Z!?*+<=>_:-][a-zA-Z0-9!?*+<=>_:-]*\)'
 function parser::parse::identifier() {
     if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 

@@ -236,6 +236,10 @@ function evaluator::setup_builtins() {
     evaluator::setup_builtin "${env}" BuiltinFunction "*" "evaluator::functions::builtin::multiply" 
     evaluator::setup_builtin "${env}" BuiltinFunction "/" "evaluator::functions::builtin::divide"
     evaluator::setup_builtin "${env}" BuiltinFunction "=" "evaluator::functions::builtin::equals"
+    evaluator::setup_builtin "${env}" BuiltinFunction "<" "evaluator::functions::builtin::lessthan"
+    evaluator::setup_builtin "${env}" BuiltinFunction ">" "evaluator::functions::builtin::greaterthan"
+    evaluator::setup_builtin "${env}" BuiltinFunction "<=" "evaluator::functions::builtin::lessthanorequal"
+    evaluator::setup_builtin "${env}" BuiltinFunction ">=" "evaluator::functions::builtin::greaterthanorequal"
 
     evaluator::setup_builtin "${env}" SpecialForm "if" "evaluator::specialforms::if"
     evaluator::setup_builtin "${env}" SpecialForm "lambda" "evaluator::specialforms::lambda"

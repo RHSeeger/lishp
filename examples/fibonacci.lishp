@@ -1,0 +1,9 @@
+(let* ((fib (lambda (n)
+                  (if (<= n 2)
+                      1
+                      (+ (fib (- n 1)) (fib (- n 2))))))
+       (note "This only works because let* defines variables in the same env that it runs the code in.
+              It would not work using let.
+              I'm not sure if that is how let* is supposed to work... need to determine that.
+              Realistically, this should be using progn and define, but those aren't created yet"))
+     (fib 5))
