@@ -1,7 +1,25 @@
 lishp
 =====
 
-A lisp interpreter written in shell script
+A lisp interpreter written in shell script. It's incomplete... very much
+so. There are very few commands defined. The key ones that are defined include:
+* Various arithmetic functions (+, -, *, /)
+* Various comparison operatores (<, >, <=, >=, =)
+* let, let*
+* lambda
+* if
+
+The next big things to add include define, some looping construct, cons, index,
+etc. That being said, what's there now is enough to show the general idea of the
+end goal. Simple programs can be written (as shown by the fibonacci example),
+which is enough to see how things work. Time to work on the project is limited
+and, combined with the extremely limited usefulness of the project, leads to the
+fact that it may never get much further.
+
+All that being said, its been a very fun learning project so far. Specifically,
+it's taught me a lot about bash. I thought I was fairly proficient with it
+before all this, but there's a lot of edge cases to be understood. Well worth
+the time spent on it.
 
 
 Intersting things learned about bash
