@@ -4,10 +4,11 @@
 [ ${EVALUATOR_SH+true} ] && return
 declare -g EVALUATOR_SH=true
 
-
 . ${BASH_SOURCE%/*}/common.sh
 . ${BASH_SOURCE%/*}/variables.sh
 . ${BASH_SOURCE%/*}/callable.sh
+. ${BASH_SOURCE%/*}/specialforms.sh
+. ${BASH_SOURCE%/*}/specialforms.lambda.sh
 . ${BASH_SOURCE%/*}/environment.sh
 . ${BASH_SOURCE%/*}/evaluator.functions.builtin.sh
 
@@ -50,37 +51,24 @@ function evaluator::eval() {
     fi
     stderr "should never get here"
     exit 1
+}
 
-    # variable::type ${exprToken} ; declare type="${RESULT}"
-    # case "${type}" in
-    #     list)
-    #         evaluator::eval_sexp "$envToken" "$exprToken"
-    #         ;;
-    #     integer)
-    #         variable::value "$exprToken"
-    #         variable::set ${EVALUATOR_VARIABLE} "${type}" "$RESULT"
-    #         ;;
-    #     string)
-    #         variable::value "$exprToken"
-    #         variable::set ${EVALUATOR_VARIABLE} "${type}" "$RESULT"
-    #         ;;
-    #     identifier) # Lookup the identifier in the environment and return it's value
-    #         variable::value "${exprToken}" ; \
-    #             declare identifierName="${RESULT}"
-    #         environment::lookup "${envToken}" "${identifierName}"
-    #         declare identifierValueToken="${RESULT}"
-    #         variable::type ${identifierValueToken} ; declare type=${RESULT}
-    #         variable::value ${identifierValueToken} ; declare value=${RESULT}
-    #         variable::set ${EVALUATOR_VARIABLE} "${type}" "${value}"
-    #         ;;
-    #     *)
-    #         stderr "evaluator::eval / Unknown type [${type}] for [${exprToken}]"
-    #         variable::printMetadata
-    #         exit 1
-    #         ;;
-    # esac
-    
-    # variable::clone "${EVALUATOR_VARIABLE}"
+function evaluator::evalFromLinkedList() {
+    if [[ ${EVALUATOR_DEBUG} == 1 ]]; then stderr "evaluator::eval ${@}" ; fi
+
+    declare envToken="${1}"
+    declare expressions="${2}" ;# A LinkedList of expressions
+
+    # evaluate expressions
+    declare currentSexp currentResult
+    while ! variable::LinkedList::isEmpty_c "${expressions}" ; do
+        variable::LinkedList::first "${expressions}" ; currentSexp=${RESULT}
+        variable::LinkedList::rest "${expressions}" ; expressions=${RESULT}
+        evaluator::eval $envToken $currentSexp
+        currentResult=${RESULT}
+    done
+    RESULT="${currentResult}"
+    return 0
 }
 
 function evaluator::eval_list() {
@@ -464,8 +452,10 @@ createTestEnv ; lambdaEnv="${RESULT}"
 setInEnv $lambdaEnv "y" Integer 10
 variable::LinkedList::new ; lambdaArgs="${RESULT}"
 appendToList $lambdaArgs Identifier "x"
+variable::LinkedList::new ; lambdaExpression="${RESULT}"
+appendToList $lambdaExpression Identifier '*' Identifier "x" Identifier "y"
 variable::LinkedList::new ; lambdaCode="${RESULT}"
-appendToList $lambdaCode Identifier '*' Identifier "x" Identifier "y"
+variable::LinkedList::append $lambdaCode $lambdaExpression
 variable::Lambda::new "$lambdaEnv $lambdaArgs $lambdaCode" ; lambda="${RESULT}"
 
 createTestEnv ; env=${RESULT}
@@ -477,9 +467,7 @@ appendToList $vCode Identifier "a"
 
 evaluator::eval "${env}" "${vCode}"
 variable::debug "${RESULT}" ; \
-    assert::equals "Integer :: 50" "${RESULT}" "env(a=5) ((lambda[env(y=10)] (x) (* x y)) a)"
-
-
+    assert::equals "Integer :: 50" "${RESULT}" "env(a=5) ((lambda[env(y=10)] (x) (* y x)) a)"
 
 #variable::printMetadata
 #echo "typeof ${vCode}=$(variable::type_p $vCode)"

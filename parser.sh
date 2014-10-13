@@ -16,6 +16,72 @@ function parser::parse() {
     parser::parse::substring "${@}"
 }
 
+#
+# Parses a series of expressions, effectively what you would find inside an sexp.
+# ?whitespace? ?expression? ?whitespace expression? ... ?whitespace expression? ?whitespace?
+#
+function parser::parse::multiExpression() {
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
+
+    declare text="${1}"
+    declare originalOffset="${2-0}"
+    declare offset=$originalOffset
+
+    if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "Trying to parse multiExpr from:
+${text:${offset}}" ; fi
+
+    # (
+    #     w? )
+    #     w? p 
+    #            w? )
+    #            w p
+    #                 w? )
+    #                 w p
+
+    # Parse a list of items
+    variable::LinkedList::new ; declare items="${RESULT}"
+
+    # Prune any beginning whitespace
+    if parser::parse::whitespace "$text" ${offset}; then
+        (( offset += ${PARSER_PARSED_COUNT} ))
+    fi
+
+    # first item in list
+    if parser::parse "${text}" ${offset}; then
+        variable::LinkedList::append "$items" ${PARSER_PARSED}
+        (( offset += ${PARSER_PARSED_COUNT} ))
+    else
+        # No items found, an empty list
+        PARSER_PARSED="${items}"
+        (( PARSER_PARSED_COUNT = offset - originalOffset ))
+        return 0
+    fi
+
+    # Parse instances of 
+    #    <whitespace> + <expression>
+    while true; do
+        if ! parser::parse::whitespace "$text" ${offset}; then
+            # No whitespace found, we're done
+            PARSER_PARSED="${items}"
+            (( PARSER_PARSED_COUNT = offset - originalOffset ))
+            return 0
+        fi
+        (( offset += ${PARSER_PARSED_COUNT} )) ; # increment by amount eatten by whitespace parser
+
+        if ! parser::parse "${text}" ${offset}; then
+            # No expression found, we're done
+            PARSER_PARSED="${items}"
+            (( PARSER_PARSED_COUNT = offset - originalOffset ))
+            return 0
+        fi
+        variable::LinkedList::append "$items" "${PARSER_PARSED}" # Add item found to items list
+        (( offset += ${PARSER_PARSED_COUNT} )) ; # increment by amount eatten by whitespace parser
+    done
+
+    stderr "Should never get here"
+    exit 1
+}
+
 function parser::parse::substring() {
     if [[ ${PARSER_DEBUG} == 1 ]]; then stderr "${FUNCNAME} ${@}" ; fi
 
@@ -34,8 +100,8 @@ function parser::parse::substring() {
         return 0
     fi
 
-    stderr "Unable to parse string at position ${offset}:
-${text:${offset}}"
+#    stderr "Unable to parse string at position ${offset}:
+#${text:${offset}}"
     return 1
 }
 
@@ -300,7 +366,7 @@ if [ $0 != $BASH_SOURCE ]; then
     return
 fi
 
-. test.sh
+. ${BASH_SOURCE%/*}/test.sh
 
 #
 # Integer
@@ -369,6 +435,48 @@ parser::parse::whitespace '' ; \
 
 parser::parse::whitespace ')' ; \
     assert::equals 1 $? "match close paren against whitespace / code"
+
+#
+# Multi-Expr
+#
+TEST="multiExpression - single expr"
+parser::parse::multiExpression "a" ; assert::equals 0 $? "${TEST} / code"
+assert::equals 1 ${PARSER_PARSED_COUNT} "${TEST} / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "${TEST} / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 1 ${RESULT} "${TEST} / length"
+variable::LinkedList::first ${PARSER_PARSED} ; \
+    variable::value ${RESULT} ; \
+    assert::equals "a" "${RESULT}" "${TEST} / value"
+
+TEST="multiExpression - multiple expressions"
+parser::parse::multiExpression "a b" ; assert::equals 0 $? "${TEST} / code"
+assert::equals 3 ${PARSER_PARSED_COUNT} "${TEST} / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "${TEST} / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 2 ${RESULT} "${TEST} / length"
+
+TEST="multiExpression - whitespaces"
+parser::parse::multiExpression " b " ; assert::equals 0 $? "${TEST} / code"
+assert::equals 3 ${PARSER_PARSED_COUNT} "${TEST} / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "${TEST} / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 1 ${RESULT} "${TEST} / length"
+
+TEST="multiExpression - integer"
+parser::parse::multiExpression "1" ; assert::equals 0 $? "${TEST} / code"
+assert::equals 1 ${PARSER_PARSED_COUNT} "${TEST} / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "${TEST} / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 1 ${RESULT} "${TEST} / length"
+
+TEST="multiExpression - sexp"
+parser::parse::multiExpression "(a)" ; assert::equals 0 $? "${TEST} / code"
+assert::equals 3 ${PARSER_PARSED_COUNT} "${TEST} / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "${TEST} / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 1 ${RESULT} "${TEST} / length"
+
+TEST="multiExpression - sexps"
+parser::parse::multiExpression "(a) (b)" ; assert::equals 0 $? "${TEST} / code"
+assert::equals 7 ${PARSER_PARSED_COUNT} "${TEST} / count"
+variable::type ${PARSER_PARSED} ; assert::equals "LinkedList" ${RESULT} "${TEST} / type"
+variable::LinkedList::length ${PARSER_PARSED} ; assert::equals 2 ${RESULT} "${TEST} / length"
 
 #
 # SEXP

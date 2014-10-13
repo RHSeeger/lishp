@@ -136,7 +136,7 @@ if [ $0 != $BASH_SOURCE ]; then
     return
 fi
 
-. test.sh
+. ${BASH_SOURCE%/*}/test.sh
 
 #
 # not using env

@@ -7,7 +7,6 @@ declare -g CALLABLE_SH=true
 . ${BASH_SOURCE%/*}/common.sh
 . ${BASH_SOURCE%/*}/variables.sh
 . ${BASH_SOURCE%/*}/variables.linkedlist.sh
-. ${BASH_SOURCE%/*}/evaluator.sh
 
 variable::type::define Callable
 variable::type::define Function Callable

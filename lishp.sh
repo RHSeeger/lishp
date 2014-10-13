@@ -49,7 +49,7 @@ $VERBOSE && echo =================
 $VERBOSE && echo "$code"
 $VERBOSE && echo =================
 
-if ! parser::parse "${code}"; then
+if ! parser::parse::multiExpression "${code}"; then
     echo "Could not parse input
 ====
 ${code}
@@ -65,7 +65,7 @@ environment::new ; declare env=${RESULT}
 evaluator::setup_builtins "${env}"
 $VERBOSE && echo "Environment setup!"
 
-evaluator::eval ${env} ${PARSER_PARSED}
+evaluator::evalFromLinkedList ${env} ${PARSER_PARSED}
 variable::debug ${RESULT}
 $VERBOSE && echo "Done!"
 $VERBOSE && echo =================
