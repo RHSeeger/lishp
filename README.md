@@ -23,6 +23,7 @@ the time spent on it.
 
 
 Intersting things learned about bash
+====
 
 When using the 
     set -u
@@ -32,7 +33,8 @@ setting to throw an error on undefined variables, the following
 winds up throwing an error. However, the following can be used to "work around" the issue
     ${emptyArray[@]:+${emptyArray[@]}}
 
-Evaluator logic:
+Evaluator logic
+====
 
 eval
     if Atom, return it (token to value)
