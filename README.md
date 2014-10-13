@@ -21,7 +21,7 @@ before all this, but there's a lot of edge cases to be understood. Well worth
 the time spent on it.
 
 
-<h2>Intersting things learned about bash<h2>
+<h2>Intersting things learned about bash</h2>
 
 
 When using the 
